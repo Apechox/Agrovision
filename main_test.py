@@ -3,7 +3,9 @@ from src.acquisition import VideoSource, SourceState
 from src.segmentation import ClassicSegmenter
 from src.tracking import CentroidTracker
 from src.calibration import Calibrator
-
+######
+Usar de base para el verdadero main
+######
 def main():
     # 1. Inicializar módulos de cada integrante
     # Cambiar source=0 por "data/videos/piloto.mp4" cuando Tomás suba el video
