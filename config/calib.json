@@ -1,0 +1,6 @@
+{
+    "px_per_mm": 8.5,
+    "camera_height_mm": 400,
+    "valid_zone_bbox": [50, 50, 540, 380],
+    "notes": "Actualizar px_per_mm tras medir el patron fisico con pie de metro (Tarea T2.5.1)"
+}
