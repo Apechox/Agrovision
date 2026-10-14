@@ -31,7 +31,7 @@ class ClassicSegmenter:
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
         # =====================================================================
-        # ZONA DE TRABAJO DE CRISTÓBAL (T2.3.1): Ajustar umbrales del fondo/tomate
+        # Ajustar umbrales del fondo/tomate
         # =====================================================================
         lower_bound = np.array([0, 70, 50])
         upper_bound = np.array([180, 255, 255])
@@ -58,7 +58,7 @@ class ClassicSegmenter:
             cy = int(M["m01"] / M["m00"]) if M["m00"] != 0 else y + h // 2
 
             # =====================================================================
-            # ZONA DE TRABAJO DE VICTORIA (T2.3.2): Validar recortes y contactos
+            # Validar recortes y contactos
             # =====================================================================
             # Si el tomate toca los bordes de la cámara, está cortado -> máscara inválida
             touching_border = (x <= 2) or (y <= 2) or (x + w >= w_img - 2) or (y + h >= h_img - 2)
