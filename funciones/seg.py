@@ -22,20 +22,21 @@ import cv2
 import numpy as np
 
 class ClassicSegmenter:
-    def __init__(self, kernel_size=5, min_area_px=500):
+    def __init__(self, kernel_size=5, min_area_px=500, hsv_lower=(0, 70, 50),
+                 hsv_upper=(179, 255, 255)):
         self.kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_size, kernel_size))
         self.min_area_px = min_area_px
+        self.hsv_lower = np.array(hsv_lower)
+        self.hsv_upper = np.array(hsv_upper)
 
     def process(self, frame):
-        # 1. Convertir de BGR a HSV
-        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        _, clean_mask, instances = self.process_with_masks(frame)
+        return clean_mask, instances
 
-        # =====================================================================
-        # Ajustar umbrales del fondo/tomate
-        # =====================================================================
-        lower_bound = np.array([0, 70, 50])
-        upper_bound = np.array([180, 255, 255])
-        raw_mask = cv2.inRange(hsv, lower_bound, upper_bound)
+    def process_with_masks(self, frame):
+        """Devuelve la máscara inicial, la máscara limpia y las detecciones."""
+        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        raw_mask = cv2.inRange(hsv, self.hsv_lower, self.hsv_upper)
 
         # Limpieza morfológica (elimina ruido blanco y rellena huecos negros)
         clean_mask = cv2.morphologyEx(raw_mask, cv2.MORPH_OPEN, self.kernel)
@@ -71,4 +72,4 @@ class ClassicSegmenter:
                 "is_valid_mask": not touching_border
             })
 
-        return clean_mask, instances
+        return raw_mask, clean_mask, instances
