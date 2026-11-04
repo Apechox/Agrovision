@@ -27,8 +27,11 @@ source .venv/bin/activate
 ### Dependencias
 
 ```bash
-python -m pip install opencv-python==5.0.0.93 numpy==2.5.4
+python -m pip install opencv-python==5.0.0.93 numpy==2.5.4 pillow matplotlib
 ```
+
+`pillow` y `matplotlib` son para la interfaz gráfica (`interfaz/`); el pipeline de línea de
+comandos (`main_test.py`) no las necesita.
 
 ## Prueba
 
@@ -50,6 +53,17 @@ python main_test.py "dataset/videos/piloto.mp4" --salida-csv salida/registro.csv
 ```
 
 Consulta opciones, incluidos los límites HSV, con `python main_test.py --help`.
+
+## Interfaz gráfica (Tkinter)
+
+```bash
+python -m interfaz.app
+```
+
+Implementa el modelo de navegación de la sección 6 del documento de diseño: adjuntar
+imagen/video (Q), iniciar procesamiento (W), guardar (E), repetir (R), salir (Esc) y abrir
+el dashboard (D) con los gráficos de Madurez Visual, Calidad Visual y Calibre Aparente.
+Reutiliza el mismo pipeline que `main_test.py`, no duplica lógica de visión.
 
 ## Estado de calibración
 
