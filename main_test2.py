@@ -12,6 +12,7 @@ from funciones.manchas import DarkSpotDetector
 from funciones.registro import SessionRegistry
 from funciones.seg import ClassicSegmenter
 from funciones.track import CentroidTracker
+from funciones.track_kalman import KalmanCentroidTracker
 
 
 def instance_mask(shape_hw, contour):
@@ -126,6 +127,10 @@ def main():
     parser.add_argument("--salida-foto", type=Path, help="Guarda las tres vistas sin abrir ventanas.")
     parser.add_argument("--salida-csv", type=Path, help="Exporta el registro consolidado por tomate (RF7).")
     parser.add_argument("--sesion", default="SESION_01", help="Identificador de sesión para el CSV (RF9).")
+    parser.add_argument("--tracker", choices=("centroide", "kalman"), default="centroide",
+                         help="centroide = asociación por distancia a la última posición (track.py). "
+                              "kalman = asociación por posición PREDICHA con velocidad constante "
+                              "(track_kalman.py, Unidad 7), más robusto a oclusiones breves.")
     parser.add_argument("--hsv-min", type=int, nargs=3, default=(0, 70, 50))
     parser.add_argument("--hsv-max", type=int, nargs=3, default=(179, 255, 255))
     args = parser.parse_args()
@@ -138,7 +143,7 @@ def main():
             parser.error("Cada límite HSV debe cumplir 0 <= mínimo <= máximo <= límite del canal.")
 
     segmenter = ClassicSegmenter(hsv_lower=args.hsv_min, hsv_upper=args.hsv_max)
-    tracker = CentroidTracker()
+    tracker = KalmanCentroidTracker() if args.tracker == "kalman" else CentroidTracker()
     calibrator = Calibrator()
     maturity = ColorMaturityClassifier()
     spots = DarkSpotDetector()
