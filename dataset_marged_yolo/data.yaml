@@ -1,0 +1,6 @@
+path: G:/Programing/Programming/.vscode/tomato_sorting/dataset/dataset_marged_yolo
+train: train/images
+val: val/images
+
+names:
+  0: tomato
