@@ -15,6 +15,7 @@ Rutas:
     POST /api/fuente/camara      ?n=0
     POST /api/fuente/muestra     usa la foto de ejemplo del dataset
     POST /api/hsv                cuerpo JSON {"min":[h,s,v],"max":[h,s,v]}
+    POST /api/roi                cuerpo JSON {"x":..,"y":..,"w":..,"h":..} (zona de medición, px)
     POST /api/iniciar | /api/detener | /api/repetir
 
 Seguridad: escucha SOLO en 127.0.0.1 y rechaza peticiones con cabecera Origin ajena
@@ -89,7 +90,7 @@ class Handler(BaseHTTPRequestHandler):
             vista = parse_qs(url.query).get("vista", ["detecciones"])[0]
             return self._video(vista)
         if url.path == "/api/registro.csv":
-            return self._csv()
+            return self._csv(parse_qs(url.query).get("formato", ["excel"])[0])
         if url.path == "/api/vista.png":
             return self._png()
         return self._estatico(url.path)
@@ -132,8 +133,8 @@ class Handler(BaseHTTPRequestHandler):
         except ERRORES_CLIENTE:
             return
 
-    def _csv(self):
-        ok, resultado = self.motor.exportar_csv()
+    def _csv(self, formato="excel"):
+        ok, resultado = self.motor.exportar_csv(formato)
         if not ok:
             return self._json({"ok": False, "mensaje": resultado}, 400)
         datos = Path(resultado).read_bytes()
@@ -185,6 +186,13 @@ class Handler(BaseHTTPRequestHandler):
                 return self._accion(m.fijar_hsv(datos["min"], datos["max"]))
             except (ValueError, KeyError, TypeError):
                 return self._accion((False, "Cuerpo inválido: se espera {min:[h,s,v], max:[h,s,v]}"))
+        if url.path == "/api/roi":
+            try:
+                largo = min(int(self.headers.get("Content-Length", "0")), 4096)
+                d = json.loads(self.rfile.read(largo) or b"{}")
+                return self._accion(m.fijar_roi(d["x"], d["y"], d["w"], d["h"]))
+            except (ValueError, KeyError, TypeError):
+                return self._accion((False, "Cuerpo inválido: se espera {x, y, w, h}"))
         return self._json({"ok": False, "mensaje": "No encontrado"}, 404)
 
     def _subida(self, nombre):

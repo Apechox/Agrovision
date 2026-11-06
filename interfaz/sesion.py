@@ -12,6 +12,7 @@ Reglas:
 """
 
 import csv
+import re
 from datetime import datetime
 from pathlib import Path
 
@@ -23,6 +24,39 @@ CAMPOS = ["sesion", "fuente", "id", "cuadro", "instante", "tipo", "ancho_px", "a
           "version_calibracion", "incidencia"]
 
 INCIDENCIA_AUSENTES = "madurez y manchas vacías: módulos A3.1/A3.2 no integrados"
+
+CAMPOS_EXCEL = ["Sesión", "Fuente", "ID", "Cuadro", "Hora", "Tipo", "Ancho (px)", "Ancho (mm)",
+                "Calibre", "Estado del calibre", "Madurez", "Manchas", "Estado del registro",
+                "px por mm", "Calibración validada", "Zona de medición [x, y, ancho, alto]", "HSV mínimo", "HSV máximo", "Observación"]
+
+
+def _coma(valor):
+    return str(valor).replace(".", ",") if isinstance(valor, float) else valor
+
+
+def _fila_excel(fila):
+    """Fila legible: hora en vez de epoch, calibración desglosada, coma decimal."""
+    instante = fila["instante"]
+    hora = (datetime.fromtimestamp(instante).strftime("%H:%M:%S") if instante > 1e9
+            else f"{instante:.2f} s")
+    version = fila["version_calibracion"]
+    px_mm = re.search(r"px_per_mm=([\d.]+)", version)
+    validada = re.search(r"validada=(\w+)", version)
+    zona = re.search(r"roi=(\[[^\]]*\])", version)
+    hsv = re.search(r"hsv=(\[[^\]]*\])-(\[[^\]]*\])", version)
+    return {
+        "Sesión": fila["sesion"], "Fuente": fila["fuente"], "ID": fila["id"],
+        "Cuadro": fila["cuadro"], "Hora": hora, "Tipo": fila["tipo"],
+        "Ancho (px)": fila["ancho_px"], "Ancho (mm)": _coma(fila["ancho_mm"]),
+        "Calibre": fila["calibre"], "Estado del calibre": fila["estado_calibre"],
+        "Madurez": fila["madurez"], "Manchas": fila["manchas"],
+        "Estado del registro": fila["estado_registro"],
+        "px por mm": _coma(float(px_mm.group(1))) if px_mm else version,
+        "Calibración validada": validada.group(1) if validada else "",
+        "Zona de medición [x, y, ancho, alto]": zona.group(1) if zona else "",
+        "HSV mínimo": hsv.group(1) if hsv else "", "HSV máximo": hsv.group(2) if hsv else "",
+        "Observación": fila["incidencia"],
+    }
 
 
 class SesionRegistro:
@@ -84,15 +118,23 @@ class SesionRegistro:
     def filas_definitivas(self):
         return [f for f in self.filas.values() if f["estado_registro"] != PROVISIONAL]
 
-    def exportar_csv(self, ruta):
+    def exportar_csv(self, ruta, formato="excel"):
+        """formato='excel': separador ';', coma decimal, columnas legibles (Excel en español).
+        formato='datos': separador ',', punto decimal, nombres técnicos (para programas)."""
         ruta = Path(ruta)
         try:
             ruta.parent.mkdir(parents=True, exist_ok=True)
             with open(ruta, "w", newline="", encoding="utf-8-sig") as f:
-                escritor = csv.DictWriter(f, fieldnames=CAMPOS, extrasaction="ignore")
-                escritor.writeheader()
-                for _, fila in sorted(self.filas.items()):
-                    escritor.writerow(fila)
+                if formato == "excel":
+                    escritor = csv.DictWriter(f, fieldnames=CAMPOS_EXCEL, delimiter=";")
+                    escritor.writeheader()
+                    for _, fila in sorted(self.filas.items()):
+                        escritor.writerow(_fila_excel(fila))
+                else:
+                    escritor = csv.DictWriter(f, fieldnames=CAMPOS, extrasaction="ignore")
+                    escritor.writeheader()
+                    for _, fila in sorted(self.filas.items()):
+                        escritor.writerow(fila)
         except OSError as exc:
             return False, f"No se pudo escribir {ruta}: {exc}"
         self.version_guardada = self.version

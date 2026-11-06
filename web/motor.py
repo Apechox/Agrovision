@@ -31,6 +31,7 @@ PERIODO_CUADRO = 1 / 25  # ritmo de reproducción, no velocidad de la cinta
 ESPERANDO, LISTO, PROCESANDO, RESULTADO = "ESPERANDO", "LISTO", "PROCESANDO", "RESULTADO"
 
 # Umbrales HSV por defecto de ClassicSegmenter y tope de cada canal (H 0-179, S y V 0-255).
+ROI_MIN = 20  # lado mínimo de la zona de medición, en px
 HSV_DEFECTO = ((0, 70, 50), (179, 255, 255))
 HSV_TOPE = (179, 255, 255)
 
@@ -52,7 +53,10 @@ class Motor:
         self.hilo = None
         self.hsv = HSV_DEFECTO      # se reemplaza completo (tupla), nunca se muta
         self.frame_img = None       # imagen cargada, para la vista previa al mover los sliders
-        self.calibracion = PipelineInspeccion().estado_calibracion
+        base = PipelineInspeccion()
+        self.calibracion = base.estado_calibracion
+        self.roi_defecto = tuple(int(v) for v in base.calibrador.valid_roi)
+        self.roi = self.roi_defecto  # zona de medición [x, y, ancho, alto]; se reemplaza completa
 
     # ------------------------------------------------------------- fuente
     def _ocupado(self):
@@ -106,14 +110,59 @@ class Motor:
                 return True, "Umbrales HSV actualizados (se aplican al video en curso)"
             if self.frame_img is None:
                 return True, "Umbrales HSV actualizados"
-            try:
-                pipeline = PipelineInspeccion()
-                self._aplicar_hsv(pipeline)
-                self.ultimo = pipeline.procesar(self.frame_img)
-                self.frame_id += 1
-            except Exception as exc:  # noqa: BLE001
-                return False, f"No evaluable con esos umbrales: {exc}"
+            ok, msg = self._previsualizar()
+            if not ok:
+                return False, f"No evaluable con esos umbrales: {msg}"
             return True, "Vista previa actualizada. Presiona Iniciar para registrar con estos umbrales."
+
+    def _previsualizar(self):
+        """Reprocesa la imagen cargada con la configuración actual (sin tocar el registro)."""
+        try:
+            pipeline = PipelineInspeccion()
+            self._aplicar_hsv(pipeline)
+            self._aplicar_roi(pipeline)
+            self.ultimo = pipeline.procesar(self.frame_img)
+            self.frame_id += 1
+        except Exception as exc:  # noqa: BLE001
+            return False, str(exc)
+        return True, ""
+
+    # ------------------------------------------------- zona de medición (ROI)
+    def _aplicar_roi(self, pipeline):
+        pipeline.calibrador.valid_roi = list(self.roi)
+
+    def _dim_cuadro(self):
+        """(ancho, alto) del último cuadro procesado, o None si aún no hay ninguno."""
+        if self.ultimo is None:
+            return None
+        alto, ancho = self.ultimo.anotado.shape[:2]
+        return ancho, alto
+
+    def fijar_roi(self, x, y, ancho, alto):
+        """Cambia la zona de medición. Mismas reglas que los umbrales: con una imagen cargada
+        y sin sesión solo actualiza la vista previa; durante una sesión se registra una incidencia."""
+        try:
+            x, y, ancho, alto = (int(v) for v in (x, y, ancho, alto))
+        except (TypeError, ValueError):
+            return False, "Zona inválida: se esperan 4 números enteros"
+        if ancho < ROI_MIN or alto < ROI_MIN or x < 0 or y < 0:
+            return False, f"La zona debe empezar en 0 o más y medir al menos {ROI_MIN} px por lado"
+        with self.lock:
+            dim = self._dim_cuadro()
+            if dim and (x + ancho > dim[0] or y + alto > dim[1]):
+                return False, f"La zona se sale de la imagen ({dim[0]}×{dim[1]} px)"
+            self.roi = (x, y, ancho, alto)
+            if self._ocupado():
+                if self.sesion:
+                    self.sesion.incidencia(
+                        "Configuración", f"Zona de medición cambiada durante la sesión a {[x, y, ancho, alto]}")
+                return True, "Zona actualizada (se aplica al video en curso)"
+            if self.frame_img is None:
+                return True, "Zona actualizada"
+            ok, msg = self._previsualizar()
+            if not ok:
+                return False, f"No evaluable con esa zona: {msg}"
+            return True, "Vista previa actualizada. Presiona Iniciar para registrar con esta zona."
 
     # ------------------------------------------------------------ control
     def iniciar(self):
@@ -124,6 +173,7 @@ class Motor:
                 return False, "Ya hay una sesión en curso"
             pipeline = PipelineInspeccion()
             self._aplicar_hsv(pipeline)
+            self._aplicar_roi(pipeline)
             id_sesion = time.strftime("S%Y%m%d_%H%M%S")
             minimo, maximo = self.hsv
             version = f"{pipeline.version_calibracion}; hsv={list(minimo)}-{list(maximo)}"
@@ -198,6 +248,8 @@ class Motor:
                     self._fuente_terminada(estado, meta, sesion, detener)
                     break
                 self._aplicar_hsv(pipeline)  # recoge los sliders también durante el video
+                with self.lock:
+                    self._aplicar_roi(pipeline)
                 try:
                     resultado = pipeline.procesar(cuadro)
                 except Exception as exc:  # noqa: BLE001
@@ -281,6 +333,8 @@ class Motor:
                 "calibracion": self.calibracion,
                 "hsv": {"min": list(self.hsv[0]), "max": list(self.hsv[1]),
                         "defecto_min": list(HSV_DEFECTO[0]), "defecto_max": list(HSV_DEFECTO[1])},
+                "roi": {"valor": list(self.roi), "defecto": list(self.roi_defecto),
+                        "cuadro": list(self._dim_cuadro()) if self._dim_cuadro() else None},
                 "observaciones": obs, "registro": reg, "incidencias": inc,
                 "puede_guardar": bool(self.sesion and self.sesion.filas),
             }
@@ -297,13 +351,15 @@ class Motor:
                     "madurez": contar("madurez"), "manchas": contar("manchas"),
                     "calibre": contar("calibre")}
 
-    def exportar_csv(self):
+    def exportar_csv(self, formato="excel"):
         """Escribe el CSV en una carpeta temporal y devuelve (ok, ruta_o_mensaje)."""
         with self.lock:
             if not self.sesion or not self.sesion.filas:
                 return False, "No hay registros para guardar todavía"
-            ruta = self.carpeta_tmp / f"registro_{self.sesion.id_sesion}.csv"
-            ok, msg = self.sesion.exportar_csv(ruta)
+            formato = "datos" if formato == "datos" else "excel"
+            sufijo = "_datos" if formato == "datos" else ""
+            ruta = self.carpeta_tmp / f"registro_{self.sesion.id_sesion}{sufijo}.csv"
+            ok, msg = self.sesion.exportar_csv(ruta, formato)
             if not ok:
                 self.sesion.incidencia("Exportación", msg)
                 return False, msg

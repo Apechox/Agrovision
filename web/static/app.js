@@ -110,9 +110,12 @@ function render(s) {
   $('#fuente-actual').textContent = s.fuente ? `Fuente: ${s.fuente}` : 'Sin fuente seleccionada';
   $('#aviso-interrupcion').hidden = !s.interrumpida;
 
+  recibirRoi(s.roi);
+
   $('#btn-iniciar').disabled = !s.fuente || s.ocupado;
   $('#btn-detener').disabled = !s.ocupado;
   $('#btn-guardar').disabled = !s.puede_guardar;
+  $('#btn-datos').disabled = !s.puede_guardar;
 
   $('#titulo-actual').textContent = s.interrumpida
     ? '⚠ Últimos resultados — anteriores a la interrupción de la fuente'
@@ -153,6 +156,81 @@ async function refrescarDashboard() {
   };
   $('#graficas').innerHTML = grafica('Madurez Visual', 'madurez') + grafica('Calidad Visual', 'manchas') + grafica('Calibre Aparente', 'calibre');
 }
+
+// ---------- zona de medición (ROI) arrastrable ----------
+const ROI_MIN = 20, roiEl = $('#roi');
+let roi = null, roiDefecto = null, cuadro = null, arrastre = null, roiTimer, roiIgnorarHasta = 0;
+const acotar = (v, a, b) => Math.max(a, Math.min(b, v));
+
+function recibirRoi(r) {
+  roiDefecto = r.defecto; cuadro = r.cuadro;
+  if (!arrastre && Date.now() > roiIgnorarHasta) roi = [...r.valor];  // no pisar lo que el usuario está moviendo
+  pintarRoi();
+}
+function geom() {  // dónde se dibuja el fotograma dentro del visor (el <img> usa object-fit: contain)
+  if (!cuadro) return null;
+  const img = $('#video'), r = img.getBoundingClientRect(), v = img.parentElement.getBoundingClientRect();
+  const k = Math.min(r.width / cuadro[0], r.height / cuadro[1]);
+  if (!(k > 0)) return null;
+  return { k, nw: cuadro[0], nh: cuadro[1],
+    x0: r.left - v.left + (r.width - cuadro[0] * k) / 2, y0: r.top - v.top + (r.height - cuadro[1] * k) / 2 };
+}
+function roiVisible() {  // la zona original puede salirse de la imagen: se muestra recortada
+  const [x, y, w, h] = roi, [W, H] = cuadro;
+  const x1 = acotar(x, 0, W - ROI_MIN), y1 = acotar(y, 0, H - ROI_MIN);
+  return [x1, y1, acotar(x + w, x1 + ROI_MIN, W) - x1, acotar(y + h, y1 + ROI_MIN, H) - y1];
+}
+function pintarRoi() {
+  const g = geom();
+  if (!g || !roi) { roiEl.hidden = true; return; }
+  const [x, y, w, h] = roiVisible();
+  roiEl.hidden = false;
+  Object.assign(roiEl.style, { left: `${g.x0 + x * g.k}px`, top: `${g.y0 + y * g.k}px`, width: `${w * g.k}px`, height: `${h * g.k}px` });
+  const recortada = roi.some((v, i) => v !== [x, y, w, h][i]);
+  $('#roi-txt').textContent = `Zona de medición: x ${x}, y ${y}, ${w} × ${h} px` +
+    (recortada ? ' (la zona guardada se salía de la imagen; mueve o suelta para ajustarla)' : '');
+}
+roiEl.addEventListener('pointerdown', (e) => {
+  const g = geom(); if (!g || !roi) return;
+  roi = roiVisible();
+  arrastre = { h: e.target.dataset.h || 'mover', px: e.clientX, py: e.clientY, r0: [...roi], g };
+  roiEl.setPointerCapture(e.pointerId); e.preventDefault();
+});
+roiEl.addEventListener('pointermove', (e) => {
+  if (!arrastre) return;
+  const { h, px, py, r0, g } = arrastre;
+  const dx = Math.round((e.clientX - px) / g.k), dy = Math.round((e.clientY - py) / g.k);
+  const [x, y, w, alto] = r0;
+  if (h === 'mover') {
+    roi = [acotar(x + dx, 0, g.nw - w), acotar(y + dy, 0, g.nh - alto), w, alto];
+  } else {
+    let x1 = x, y1 = y, x2 = x + w, y2 = y + alto;
+    if (h.includes('w')) x1 = acotar(x1 + dx, 0, x2 - ROI_MIN);
+    if (h.includes('e')) x2 = acotar(x2 + dx, x1 + ROI_MIN, g.nw);
+    if (h.includes('n')) y1 = acotar(y1 + dy, 0, y2 - ROI_MIN);
+    if (h.includes('s')) y2 = acotar(y2 + dy, y1 + ROI_MIN, g.nh);
+    roi = [x1, y1, x2 - x1, y2 - y1];
+  }
+  pintarRoi();
+  clearTimeout(roiTimer); roiTimer = setTimeout(enviarRoi, 120);
+});
+const soltarRoi = () => { if (!arrastre) return; arrastre = null; clearTimeout(roiTimer); enviarRoi(); };
+roiEl.addEventListener('pointerup', soltarRoi);
+roiEl.addEventListener('pointercancel', soltarRoi);
+async function enviarRoi() {
+  roiIgnorarHasta = Date.now() + 700;  // la respuesta de /api/estado en vuelo podría traer la zona anterior
+  try {
+    const r = await fetch('/api/roi', { method: 'POST', body: JSON.stringify({ x: roi[0], y: roi[1], w: roi[2], h: roi[3] }) });
+    const j = await r.json();
+    if (!j.ok) aviso(j.mensaje, false);
+  } catch (e) { aviso('No se pudo enviar la zona de medición', false); }
+}
+$('#btn-roi-reset').addEventListener('click', () => {
+  if (!roiDefecto) return;
+  roi = [...roiDefecto]; pintarRoi(); enviarRoi();
+});
+new ResizeObserver(pintarRoi).observe($('.visor'));
+$('#video').addEventListener('load', pintarRoi);
 
 // ---------- sliders HSV ----------
 const CANALES = [['H', 179], ['S', 255], ['V', 255]];
@@ -212,6 +290,11 @@ function guardar() {
 $('#btn-iniciar').addEventListener('click', iniciar);
 $('#btn-detener').addEventListener('click', detener);
 $('#btn-guardar').addEventListener('click', guardar);
+$('#btn-datos').addEventListener('click', () => {
+  if ($('#btn-datos').disabled) return;
+  const a = document.createElement('a'); a.href = '/api/registro.csv?formato=datos'; a.download = 'registro_datos.csv';
+  document.body.append(a); a.click(); a.remove();
+});
 $('#btn-repetir').addEventListener('click', repetir);
 $('#btn-muestra').addEventListener('click', accion('/api/fuente/muestra'));
 $('#btn-camara').addEventListener('click', async () => {

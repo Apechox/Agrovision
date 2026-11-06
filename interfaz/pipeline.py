@@ -107,7 +107,8 @@ class PipelineInspeccion:
     @property
     def version_calibracion(self):
         validada = "sí" if self.calibracion_validada else "no"
-        return f"px_per_mm={self.calibrador.scale_px_per_mm}; validada={validada}"
+        roi = [int(v) for v in self.calibrador.valid_roi]
+        return f"px_per_mm={self.calibrador.scale_px_per_mm}; validada={validada}; roi={roi}"
 
     @property
     def estado_calibracion(self):

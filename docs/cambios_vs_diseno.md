@@ -25,6 +25,8 @@ Leyenda de tipo: **Cambio** (decisión nueva a aprobar) · **Adición** (algo qu
 
 | C10 | 6.2 / 5.2 (no descrito) | La interfaz solo muestra resultados | En la web se agregan **sliders HSV** para ajustar la segmentación y ver la máscara; los umbrales quedan en el CSV y los cambios a mitad de video se registran como incidencia | Adición | Facilita ajustar la segmentación (A2.3) y explicar el pipeline |
 
+| C11 | 6.2 / RF9 / RF7 | La zona de medición sale fija de `config/calib.json`; el CSV tiene un solo formato | En la web la **zona de medición se arrastra y redimensiona sobre el video**; el cambio no modifica `calib.json`, queda en el CSV (`roi=[x, y, ancho, alto]`) y, si ocurre a mitad de video, como incidencia. El CSV se ofrece en dos formatos: **Excel** (`;`, coma decimal, columnas legibles) y **datos** (`,`, nombres técnicos) | Adición | Ajustar la zona a cada montaje y poder abrir el registro en Excel en español |
+
 ## B. Afirmaciones del documento que el repositorio no respalda
 
 | # | Sección v1.1 | Afirmación | Lo verificado | Tipo |

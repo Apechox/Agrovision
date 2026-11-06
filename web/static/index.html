@@ -27,9 +27,17 @@
       </div>
       <div class="visor">
         <img id="video" alt="Video en inspección">
+        <div id="roi" class="roi" hidden title="Arrastra para mover; usa los puntos para cambiar el tamaño">
+          <i data-h="nw"></i><i data-h="n"></i><i data-h="ne"></i><i data-h="e"></i>
+          <i data-h="se"></i><i data-h="s"></i><i data-h="sw"></i><i data-h="w"></i>
+        </div>
         <div id="aviso-interrupcion" class="banda-aviso" hidden>
           ⚠ ÚLTIMOS RESULTADOS — anteriores a la interrupción de la fuente
         </div>
+      </div>
+      <div class="fila">
+        <span id="roi-txt" class="chico">Zona de medición: aparece sobre la imagen cuando hay un cuadro</span>
+        <button id="btn-roi-reset" class="sec">Restablecer zona</button>
       </div>
       <p id="explica" class="explica"></p>
     </div>
@@ -76,6 +84,7 @@
         <button id="btn-iniciar" class="prim"><kbd>W</kbd> Iniciar</button>
         <button id="btn-detener" class="sec"><kbd>S</kbd> Detener</button>
         <button id="btn-guardar" class="sec"><kbd>E</kbd> Guardar</button>
+        <button id="btn-datos" class="sec" title="CSV con coma y nombres técnicos, para programas (Python, etc.)">CSV para programas</button>
         <button id="btn-repetir" class="sec"><kbd>R</kbd> Repetir</button>
       </div>
     </div>

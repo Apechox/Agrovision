@@ -45,6 +45,19 @@ p { margin: 0; }
 .visor { position: relative; background: var(--visor); border-radius: 8px; overflow: hidden;
   display: grid; place-items: center; min-height: 260px; }
 .visor img { width: 100%; max-height: 62vh; object-fit: contain; display: block; }
+.roi { position: absolute; box-sizing: border-box; border: 2px solid var(--info); cursor: move;
+  background: rgba(31, 95, 168, .14); touch-action: none; }
+.roi[hidden] { display: none; }
+.roi i { position: absolute; width: 14px; height: 14px; box-sizing: border-box; background: #fff;
+  border: 2px solid var(--info); border-radius: 3px; touch-action: none; margin: -7px 0 0 -7px; }
+.roi i[data-h="nw"] { left: 0; top: 0; cursor: nwse-resize; }
+.roi i[data-h="n"]  { left: 50%; top: 0; cursor: ns-resize; }
+.roi i[data-h="ne"] { left: 100%; top: 0; cursor: nesw-resize; }
+.roi i[data-h="e"]  { left: 100%; top: 50%; cursor: ew-resize; }
+.roi i[data-h="se"] { left: 100%; top: 100%; cursor: nwse-resize; }
+.roi i[data-h="s"]  { left: 50%; top: 100%; cursor: ns-resize; }
+.roi i[data-h="sw"] { left: 0; top: 100%; cursor: nesw-resize; }
+.roi i[data-h="w"]  { left: 0; top: 50%; cursor: ew-resize; }
 .banda-aviso { position: absolute; left: 0; right: 0; top: 0; padding: 8px 12px; font-weight: 700;
   background: var(--aviso-fondo); color: var(--aviso); border-bottom: 2px solid var(--aviso); }
 
