@@ -14,6 +14,7 @@ Rutas:
     POST /api/fuente/archivo     cuerpo = archivo crudo; ?nombre=video.mp4
     POST /api/fuente/camara      ?n=0
     POST /api/fuente/muestra     usa la foto de ejemplo del dataset
+    POST /api/hsv                cuerpo JSON {"min":[h,s,v],"max":[h,s,v]}
     POST /api/iniciar | /api/detener | /api/repetir
 
 Seguridad: escucha SOLO en 127.0.0.1 y rechaza peticiones con cabecera Origin ajena
@@ -177,6 +178,13 @@ class Handler(BaseHTTPRequestHandler):
                 return self._accion((False, "Número de cámara inválido"))
         if url.path == "/api/fuente/archivo":
             return self._subida(consulta.get("nombre", [""])[0])
+        if url.path == "/api/hsv":
+            try:
+                largo = min(int(self.headers.get("Content-Length", "0")), 4096)
+                datos = json.loads(self.rfile.read(largo) or b"{}")
+                return self._accion(m.fijar_hsv(datos["min"], datos["max"]))
+            except (ValueError, KeyError, TypeError):
+                return self._accion((False, "Cuerpo inválido: se espera {min:[h,s,v], max:[h,s,v]}"))
         return self._json({"ok": False, "mensaje": "No encontrado"}, 404)
 
     def _subida(self, nombre):

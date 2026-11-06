@@ -35,6 +35,18 @@
     </div>
 
     <div class="tarjeta">
+      <h2>Ajusta la segmentación (HSV)</h2>
+      <p class="explica">Mueve los límites y mira cómo cambia la <b>máscara</b> (pestaña 2a). H = tono de color,
+        S = saturación, V = brillo. Con una imagen cargada verás una vista previa; para registrar con estos
+        valores presiona <b>Iniciar</b>. Con video, el cambio se aplica en caliente.</p>
+      <div class="sliders" id="sliders"></div>
+      <div class="fila">
+        <button id="btn-hsv-reset" class="sec">Restablecer valores por defecto</button>
+        <span id="hsv-nota" class="chico"></span>
+      </div>
+    </div>
+
+    <div class="tarjeta">
       <h2>Pipeline: ¿qué pasa con cada cuadro?</h2>
       <ol class="etapas" id="etapas"></ol>
       <p id="etapa-detalle" class="explica">Pasa el mouse o haz clic en una etapa para ver qué hace.</p>

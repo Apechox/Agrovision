@@ -19,7 +19,11 @@ import numpy as np
 
 from funciones.calib import Calibrator
 from funciones.seg import ClassicSegmenter
-from funciones.track import CentroidTracker
+
+try:  # la rama de seguimiento mueve track.py a funciones/tracking/
+    from funciones.tracking.track import CentroidTracker
+except ImportError:
+    from funciones.track import CentroidTracker
 
 RAIZ = Path(__file__).resolve().parent.parent
 CONFIG_CALIB = RAIZ / "config" / "calib.json"

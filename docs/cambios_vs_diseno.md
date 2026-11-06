@@ -23,6 +23,8 @@ Leyenda de tipo: **Cambio** (decisión nueva a aprobar) · **Adición** (algo qu
 | C8 | RF9 / 5.3 | Criterio fijo y versionado para elegir la observación del paso | Se elige la más cercana al centro de la zona de medición (el ejemplo de 5.3). **Aún no está versionado** | Adición | Permite consolidar una fila por ID |
 | C9 | RF7 / M6 | Registro con versiones de modelo, perfil y calibración | El registro de la interfaz (`interfaz/sesion.py`) guarda solo la versión de calibración. Estados de fila: Provisional, Confirmado, Cierre de sesión, Interrumpido | Cambio | Es un registro provisional hasta integrar `funciones/registro.py` (M6) |
 
+| C10 | 6.2 / 5.2 (no descrito) | La interfaz solo muestra resultados | En la web se agregan **sliders HSV** para ajustar la segmentación y ver la máscara; los umbrales quedan en el CSV y los cambios a mitad de video se registran como incidencia | Adición | Facilita ajustar la segmentación (A2.3) y explicar el pipeline |
+
 ## B. Afirmaciones del documento que el repositorio no respalda
 
 | # | Sección v1.1 | Afirmación | Lo verificado | Tipo |
@@ -49,3 +51,5 @@ Leyenda de tipo: **Cambio** (decisión nueva a aprobar) · **Adición** (algo qu
 | P8 | RF1 cámara en vivo | Implementado, **sin probar con una cámara real** |
 | P9 | Tracker | La interfaz usa `CentroidTracker`; `track_kalman.py` existe pero no está conectado |
 | P10 | RNF4 manual de usuario | No existe |
+| P11 | Integración con la rama `vicferx/tracking-base-y-contrato` | Esa rama mueve `track.py` y `track_kalman.py` a `funciones/tracking/`. `interfaz/pipeline.py` ya acepta ambas ubicaciones. Al integrar, hay que revisar también su cambio en `interfaz/app.py` (que aún importa módulos inexistentes) |
+| P12 | Videos reales de la cinta (`dataset/video/*`, 464×832 px) | `config/calib.json` y la zona de medición no corresponden a estas grabaciones; las medidas en mm no son interpretables hasta calibrar (T2.5.1) |

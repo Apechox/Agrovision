@@ -59,6 +59,11 @@ p { margin: 0; }
   font-weight: 700; border: 1px solid currentColor; }
 .chip.ok { color: var(--ok); } .chip.pend { color: var(--aviso); }
 
+.sliders { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 6px 18px; margin: 10px 0; }
+.slider { display: grid; grid-template-columns: 44px 1fr 34px; gap: 8px; align-items: center; font-size: 13px; }
+.slider input[type=range] { width: 100%; accent-color: var(--prim); }
+.slider output { text-align: right; font-variant-numeric: tabular-nums; color: var(--suave); }
+
 .zona { border: 2px dashed var(--borde); border-radius: 10px; padding: 16px; text-align: center;
   display: grid; gap: 4px; color: var(--suave); cursor: pointer; }
 .zona.sobre, .zona:focus-visible { border-color: var(--prim); outline: none; color: var(--texto); }

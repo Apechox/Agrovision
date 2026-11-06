@@ -98,6 +98,10 @@ function render(s) {
   const firma = JSON.stringify(s);
   if (firma === ultimo) return;
   ultimo = firma;
+  defectoHsv = { min: s.hsv.defecto_min, max: s.hsv.defecto_max };
+  if (!hsvIniciado) {  // solo la primera vez: después mandan los sliders, no el servidor
+    hsvIniciado = true; hsv = { min: [...s.hsv.min], max: [...s.hsv.max] }; pintarSliders();
+  }
 
   const [txt, clase] = s.interrumpida ? ['Fuente interrumpida', 'pill-aviso'] : (ESTADOS[s.estado] || ESTADOS.ESPERANDO);
   const pill = $('#pill'); pill.textContent = '● ' + txt; pill.className = 'pill ' + clase;
@@ -149,6 +153,42 @@ async function refrescarDashboard() {
   };
   $('#graficas').innerHTML = grafica('Madurez Visual', 'madurez') + grafica('Calidad Visual', 'manchas') + grafica('Calibre Aparente', 'calibre');
 }
+
+// ---------- sliders HSV ----------
+const CANALES = [['H', 179], ['S', 255], ['V', 255]];
+let hsv = { min: [0, 70, 50], max: [179, 255, 255] }, hsvIniciado = false, hsvTimer;
+const sliders = [];  // {lado, i, input, salida}
+CANALES.forEach(([nombre, tope], i) => ['min', 'max'].forEach((lado) => {
+  const fila = document.createElement('label'); fila.className = 'slider';
+  const etiqueta = document.createElement('span'); etiqueta.textContent = `${nombre} ${lado === 'min' ? 'mín' : 'máx'}`;
+  const input = document.createElement('input'); Object.assign(input, { type: 'range', min: 0, max: tope, step: 1 });
+  const salida = document.createElement('output');
+  input.setAttribute('aria-label', etiqueta.textContent);
+  input.addEventListener('input', () => {
+    hsv[lado][i] = Number(input.value);
+    if (hsv.min[i] > hsv.max[i]) { hsv[lado === 'min' ? 'max' : 'min'][i] = hsv[lado][i]; }  // mantiene mín ≤ máx
+    pintarSliders();
+    clearTimeout(hsvTimer); hsvTimer = setTimeout(enviarHsv, 120);
+  });
+  fila.append(etiqueta, input, salida); $('#sliders').append(fila);
+  sliders.push({ lado, i, input, salida });
+}));
+function pintarSliders() {
+  sliders.forEach((s) => { s.input.value = hsv[s.lado][s.i]; s.salida.textContent = hsv[s.lado][s.i]; });
+}
+async function enviarHsv() {
+  try {
+    const r = await fetch('/api/hsv', { method: 'POST', body: JSON.stringify(hsv) });
+    const j = await r.json();
+    $('#hsv-nota').textContent = j.mensaje;
+    if (!j.ok) aviso(j.mensaje, false);
+  } catch (e) { aviso('No se pudo contactar al servidor local.', false); }
+}
+$('#btn-hsv-reset').addEventListener('click', () => {
+  hsv = { min: [...defectoHsv.min], max: [...defectoHsv.max] }; pintarSliders(); enviarHsv();
+});
+let defectoHsv = { min: [0, 70, 50], max: [179, 255, 255] };
+pintarSliders();
 
 // ---------- acciones ----------
 async function subir(archivo) {

@@ -4,12 +4,13 @@
 **Actividad:** A3.6 Interfaz gráfica (video, ID, medidas, controles, errores) · **OE:** OE3
 **Fecha:** 06/11/2026 · **Ramas:** `feat/interfaz-funcional` (Tkinter), `feat/interfaz-web` (web local)
 **Complemento:** `docs/cambios_vs_diseno.md` (qué difiere del documento de diseño v1.1)
+**Alcance:** este documento describe **solo la parte de interfaz (A3.6)**. Los demás módulos (adquisición, segmentación, seguimiento, calibración, madurez, manchas, modelo) se mencionan únicamente como dependencias.
 
 ---
 
 ## 1. Resumen
 
-Se construyó una interfaz que muestra el video con la zona de medición, contornos, ID y ancho en mm; permite controlar la sesión; registra **una fila por tomate**; exporta CSV y vista anotada; informa incidencias; y grafica estadísticas. Existe en dos versiones que comparten el mismo código de visión: **Tkinter** (escritorio) y **web local**.
+Se construyó una interfaz que muestra el video con la zona de medición, contornos, ID y ancho en mm; permite controlar la sesión; registra **una fila por tomate**; exporta CSV y vista anotada; informa incidencias; y grafica estadísticas. Existe en dos versiones que comparten el mismo código de visión: **Tkinter** (escritorio) y **web local**. La web agrega una parte didáctica: vistas por etapa del procesamiento, explicación del pipeline y **sliders HSV** para ajustar la segmentación y ver cómo cambia la máscara.
 
 La interfaz usa **solo los módulos que existen hoy en el repositorio** (`acq`, `seg`, `track`, `calib`). Madurez y manchas figuran como *Pendiente*, porque `madurez.py`, `manchas.py` y `registro.py` no están en el repo (ver sección 6).
 
@@ -47,6 +48,7 @@ La interfaz usa **solo los módulos que existen hoy en el repositorio** (`acq`, 
 3. *Hilo separado para video:* para no congelar la interfaz (RNF5). Cada sesión usa su propio evento de parada, así una sesión descartada no contamina la siguiente.
 4. *Dato ausente = vacío, nunca cero* (RF7). El guardado se confirma solo tras escribir con éxito.
 5. *Seguridad de la web local:* escucha solo en `127.0.0.1` y rechaza peticiones con cabecera `Origin` ajena.
+6. *Sliders HSV con trazabilidad:* los umbrales viajan a la sesión y quedan en el CSV (`version_calibracion`). Si se cambian en mitad de un video, se registra una incidencia, porque el CSV solo guarda los umbrales iniciales. Con una imagen cargada, mover un slider solo actualiza la vista previa; el registro no cambia hasta presionar Iniciar.
 
 ## 4. Cómo ejecutar
 
@@ -58,6 +60,17 @@ python -m web.server          # web: abrir http://127.0.0.1:8000
 ```
 
 Atajos (ambas): **Q** adjuntar · **W** iniciar · **S** detener · **E** guardar · **R** repetir · **D** dashboard.
+
+**Probar con tus propios archivos (web):** arrastra una imagen o video a la zona "Arrastra una imagen o video aquí" (o presiona **Q**). Formatos: `.png .jpg .jpeg .bmp .mp4 .avi .mov .mkv`, hasta 500 MB. Para detener el servidor, `Ctrl+C` en la terminal. Si el puerto 8000 está ocupado: `python -m web.server --puerto 8080`.
+
+**Videos de tomates disponibles:** la rama remota `origin/vicferx/tracking-base-y-contrato` incluye `dataset/video/tomates_sabana_gris_1.mp4` a `_5.mp4`. Para copiarlos a tu carpeta sin cambiar de rama:
+
+```bash
+git fetch origin
+git restore --source=origin/vicferx/tracking-base-y-contrato --worktree -- dataset/video
+```
+
+(quedan como archivos sin seguimiento: no los incluyas en tus commits).
 
 ## 5. Cobertura de requisitos (estado real)
 
@@ -86,6 +99,9 @@ Todas automáticas o de humo, ejecutadas el 05–06/11/2026. **Ninguna con cáma
 | API web: estado, subida de video, formato no soportado (`.exe`), CSV, PNG, ruta fuera de `static/`, origen ajeno | 200 / 400 / 404 / 403 según corresponde |
 | Vistas de video web (detecciones, máscara HSV, máscara limpia) | Las tres entregan imágenes distintas |
 | Inspección visual en navegador | Sin errores de consola |
+| Sliders HSV (imagen): rango rojo estrecho | La máscara cambia (61 066 → 46 848 píxeles blancos) y el registro de la sesión original no se altera |
+| Sliders HSV: valores inválidos (mín > máx, fuera de tope, texto, cuerpo no JSON) | Rechazados con mensaje (400) |
+| Video **real** `tomates_sabana_gris_1.mp4` (464×832 px, 421 cuadros) con cambio de umbrales a mitad | Procesó los 421 cuadros (~21 FPS de proceso en este equipo), 9 registros, estado final "Fin del archivo". **Las medidas no son interpretables** (ver sección 7, punto 6) |
 
 **No verificado:** cámara real, video real, rendimiento con carga (RNF2), sesiones largas (RNF5), uso por un operador (RNF4).
 
@@ -96,6 +112,8 @@ Todas automáticas o de humo, ejecutadas el 05–06/11/2026. **Ninguna con cáma
 3. Cortes de calibre 55/70 mm provisionales (A3.3).
 4. La medida usa el ancho de la caja delimitadora; con tomates rotados o tocándose puede sobreestimar.
 5. En la web, el navegador tarda ~1 s en reflejar un cambio de vista.
+6. **Los videos reales aún no dan medidas válidas.** `config/calib.json` (`px_per_mm = 8.5`, zona `[50, 50, 540, 380]`) no corresponde a estas grabaciones: son verticales de 464×832 px, la zona de medición se sale del ancho del cuadro y los anchos salen entre 6 y 12 mm (un tomate real mide ~60 mm). Hace falta calibrar con el patrón físico (T2.5.1) y ajustar los umbrales HSV (los sliders sirven para eso). También se observaron saltos de ID (1, 3, 6, 8…), que conviene revisar con el responsable del seguimiento.
+7. Los umbrales HSV de los sliders no se guardan en `config/`; se pierden al recargar la página (RF10 pendiente).
 
 ## 8. Texto propuesto para el documento de diseño
 
@@ -119,11 +137,23 @@ Todas automáticas o de humo, ejecutadas el 05–06/11/2026. **Ninguna con cáma
 | `interfaz/pipeline.py`, `sesion.py`, `app.py`, `dashboard.py` | Esqueleto del repo (commits `0ed4954`, `77e4025`) y módulos propios `seg`, `track`, `calib`, `acq` | Reescritura completa: se eliminaron las dependencias a módulos inexistentes, se agregó registro por ID, incidencias, confirmación de guardado y hilo con cola |
 | `web/motor.py`, `web/server.py`, `web/static/*` | Librería estándar de Python (`http.server`) y OpenCV (`cv2.imencode` para MJPEG). **No proviene de ejemplos del curso** | Desarrollo propio; reutiliza `pipeline.py` |
 
-> **Declarar según la política del curso:** el código de esta interfaz fue desarrollado con asistencia de una herramienta de IA (Claude Code). Confirmar cómo debe declararse en la entrega.
 
-## 10. Trazabilidad
+## 10. Evidencia
+
+Archivos en `docs/evidencia/` (accesibles desde el repositorio una vez subida la rama):
+
+| Archivo | Qué muestra |
+|---|---|
+| `web_detecciones.jpg` | Vista "Detecciones": contorno, ID, 32,5 mm y zona de medición |
+| `web_dashboard.jpg` | Máscara HSV y pestaña Dashboard |
+| `web_sliders_hsv.jpg` | Sliders HSV y panel del pipeline con módulos integrados/pendientes |
+| `registro_ejemplo.csv` | CSV real generado por la web con la foto de ejemplo |
+
+## 11. Trazabilidad
 
 | Cambio | Commit |
 |---|---|
 | Interfaz Tkinter funcional | `a74bd36` (rama `feat/interfaz-funcional`) |
 | Interfaz web local y documentación | `0aa1bc1` (rama `feat/interfaz-web`) |
+| Hash en el documento | `87e0f98` |
+| Sliders HSV, evidencia y ajustes de documentación | commit posterior a `87e0f98` en `feat/interfaz-web` (ver `git log`) |

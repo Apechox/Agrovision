@@ -15,6 +15,8 @@ import time
 from collections import Counter
 from pathlib import Path
 
+import numpy as np
+
 from funciones.acq import SourceState, VideoSource
 from interfaz.pipeline import PipelineInspeccion, leer_imagen
 from interfaz.sesion import SesionRegistro
@@ -27,6 +29,10 @@ EXT_VIDEO = {".mp4", ".avi", ".mov", ".mkv"}
 PERIODO_CUADRO = 1 / 25  # ritmo de reproducción, no velocidad de la cinta
 
 ESPERANDO, LISTO, PROCESANDO, RESULTADO = "ESPERANDO", "LISTO", "PROCESANDO", "RESULTADO"
+
+# Umbrales HSV por defecto de ClassicSegmenter y tope de cada canal (H 0-179, S y V 0-255).
+HSV_DEFECTO = ((0, 70, 50), (179, 255, 255))
+HSV_TOPE = (179, 255, 255)
 
 
 class Motor:
@@ -44,6 +50,8 @@ class Motor:
         self.interrumpida = False
         self.detener_ev = threading.Event()
         self.hilo = None
+        self.hsv = HSV_DEFECTO      # se reemplaza completo (tupla), nunca se muta
+        self.frame_img = None       # imagen cargada, para la vista previa al mover los sliders
         self.calibracion = PipelineInspeccion().estado_calibracion
 
     # ------------------------------------------------------------- fuente
@@ -73,6 +81,40 @@ class Motor:
             self.mensaje = f"Fuente lista: {fuente[2]}. Presiona Iniciar."
             return True, self.mensaje
 
+    # --------------------------------------------------------- umbrales HSV
+    def _aplicar_hsv(self, pipeline):
+        minimo, maximo = self.hsv
+        pipeline.segmentador.hsv_lower = np.array(minimo)
+        pipeline.segmentador.hsv_upper = np.array(maximo)
+
+    def fijar_hsv(self, minimo, maximo):
+        """Cambia los umbrales de segmentación. Con una imagen cargada y sin sesión en
+        curso, solo actualiza la vista previa: el registro no cambia hasta Iniciar."""
+        try:
+            minimo, maximo = tuple(int(v) for v in minimo), tuple(int(v) for v in maximo)
+        except (TypeError, ValueError):
+            return False, "Valores HSV inválidos"
+        if len(minimo) != 3 or len(maximo) != 3 or any(
+                not 0 <= lo <= hi <= tope for lo, hi, tope in zip(minimo, maximo, HSV_TOPE)):
+            return False, "Cada límite debe cumplir 0 ≤ mínimo ≤ máximo ≤ tope del canal (H 179, S 255, V 255)"
+        with self.lock:
+            self.hsv = (minimo, maximo)
+            if self._ocupado():
+                if self.sesion:  # trazabilidad: el CSV registra los umbrales iniciales
+                    self.sesion.incidencia(
+                        "Configuración", f"Umbrales HSV cambiados durante la sesión a {list(minimo)}-{list(maximo)}")
+                return True, "Umbrales HSV actualizados (se aplican al video en curso)"
+            if self.frame_img is None:
+                return True, "Umbrales HSV actualizados"
+            try:
+                pipeline = PipelineInspeccion()
+                self._aplicar_hsv(pipeline)
+                self.ultimo = pipeline.procesar(self.frame_img)
+                self.frame_id += 1
+            except Exception as exc:  # noqa: BLE001
+                return False, f"No evaluable con esos umbrales: {exc}"
+            return True, "Vista previa actualizada. Presiona Iniciar para registrar con estos umbrales."
+
     # ------------------------------------------------------------ control
     def iniciar(self):
         with self.lock:
@@ -81,8 +123,12 @@ class Motor:
             if self._ocupado():
                 return False, "Ya hay una sesión en curso"
             pipeline = PipelineInspeccion()
+            self._aplicar_hsv(pipeline)
             id_sesion = time.strftime("S%Y%m%d_%H%M%S")
-            self.sesion = SesionRegistro(id_sesion, self.fuente[2], pipeline.version_calibracion)
+            minimo, maximo = self.hsv
+            version = f"{pipeline.version_calibracion}; hsv={list(minimo)}-{list(maximo)}"
+            self.sesion = SesionRegistro(id_sesion, self.fuente[2], version)
+            self.frame_img = None
             self.sesion.incidencia("Calibración", pipeline.estado_calibracion, unica=True)
             self.ultimo, self.frame_id, self.cuadros = None, 0, 0
             self.interrumpida = False
@@ -113,7 +159,7 @@ class Motor:
     def repetir(self):
         with self.lock:
             self.detener_ev.set()
-            self.sesion, self.fuente, self.ultimo = None, None, None
+            self.sesion, self.fuente, self.ultimo, self.frame_img = None, None, None, None
             self.frame_id, self.cuadros, self.interrumpida = 0, 0, False
             self.estado, self.mensaje = ESPERANDO, "Esperando imagen/video"
             return True, self.mensaje
@@ -129,6 +175,7 @@ class Motor:
             self.estado, self.fuente = ESPERANDO, None
             self.mensaje = "Error de lectura: vuelve a Esperando imagen/video"
             return
+        self.frame_img = frame
         try:
             resultado = pipeline.procesar(frame)
         except Exception as exc:  # noqa: BLE001  error de procesamiento: "No evaluable"
@@ -150,6 +197,7 @@ class Motor:
                 if meta["suspend_observations"]:
                     self._fuente_terminada(estado, meta, sesion, detener)
                     break
+                self._aplicar_hsv(pipeline)  # recoge los sliders también durante el video
                 try:
                     resultado = pipeline.procesar(cuadro)
                 except Exception as exc:  # noqa: BLE001
@@ -231,6 +279,8 @@ class Motor:
                 "fps": round(self.cuadros / seg, 1) if self._ocupado() else None,
                 "ocupado": self._ocupado(), "interrumpida": self.interrumpida,
                 "calibracion": self.calibracion,
+                "hsv": {"min": list(self.hsv[0]), "max": list(self.hsv[1]),
+                        "defecto_min": list(HSV_DEFECTO[0]), "defecto_max": list(HSV_DEFECTO[1])},
                 "observaciones": obs, "registro": reg, "incidencias": inc,
                 "puede_guardar": bool(self.sesion and self.sesion.filas),
             }
