@@ -1,10 +1,9 @@
-# Segmentación de tomates (A2.3) — código y evidencia de funcionamiento
+# Segmentación de tomates — código y evidencia de funcionamiento
 
 Este documento junta todo lo relacionado específicamente con la **segmentación**: qué hace el código, por qué está hecho así, y la evidencia de que funciona (y de cuándo no). Para la trazabilidad con los ejemplos del curso ver `docs/adaptacion.md`; este archivo es solo sobre segmentación, con más detalle y las imágenes de las pruebas.
 
 ## Índice
-1. [`funciones/seg.py` — segmentación por color (HSV)](#1-funcionessegpy--segmentación-por-color-hsv)
-2. [`funciones/seg_fondo.py` — segmentación por fondo + color](#2-funcionesseg_fondopy--segmentación-por-fondo--color)
+1. [`funciones/seg.py` — una sola clase, color solo o color + fondo](#1-funcionessegpy--una-sola-clase-color-solo-o-color--fondo)
 3. [Evidencia 1: foto propia del repo (un tomate)](#3-evidencia-1-foto-propia-del-repo-un-tomate)
 4. [Evidencia 2: foto real con varios tomates (IDs por instancia)](#4-evidencia-2-foto-real-con-varios-tomates-ids-por-instancia)
 5. [Evidencia 3: por qué el color solo no alcanza para fruta de cualquier color](#5-evidencia-3-por-qué-el-color-solo-no-alcanza-para-fruta-de-cualquier-color)
@@ -15,35 +14,31 @@ Este documento junta todo lo relacionado específicamente con la **segmentación
 
 ---
 
-## 1. `funciones/seg.py` — segmentación por color (HSV)
+## 1. `funciones/seg.py` — una sola clase, color solo o color + fondo
 
-`ClassicSegmenter` recibe un cuadro BGR y devuelve `(mask, instances)`, donde `instances` es una lista (una por tomate detectado) de diccionarios con `bbox`, `centroid`, `area_px`, `contour` e `is_valid_mask`.
+Una única clase, `ClassicSegmenter`, recibe un cuadro BGR y devuelve `(mask, instances)`, donde `instances` es una lista (una por tomate detectado) de diccionarios con `bbox`, `centroid`, `area_px`, `contour` e `is_valid_mask`. (Hasta una versión anterior de este documento existían dos clases separadas, `ClassicSegmenter` y `BackgroundColorSegmenter` en un archivo `seg_fondo.py` — se unificaron en una sola porque hacían casi lo mismo.)
 
 ```python
-hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)           # separa color (Hue) de brillo/saturación
-raw_mask = cv2.inRange(hsv, hsv_lower, hsv_upper)        # 1 = color de tomate, 0 = fondo
+raw_mask = mascara_color(frame)                          # 1 = color de tomate
+if fondo_referencia is not None:
+    raw_mask = raw_mask AND mascara_fondo(frame)         # + distinto al fondo vacío (opcional)
+
 clean_mask = cv2.morphologyEx(raw_mask, cv2.MORPH_OPEN, kernel)   # saca ruido suelto
 clean_mask = cv2.morphologyEx(clean_mask, cv2.MORPH_CLOSE, kernel) # rellena huecos (reflejos)
 contours, _ = cv2.findContours(clean_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 ```
+donde `mascara_color` es `cv2.inRange` en HSV (uno o varios rangos combinados con `OR`, vía `rangos_extra`) y `mascara_fondo` es `cv2.absdiff(frame, fondo_referencia)` umbralizado.
 
 Por cada contorno con área ≥ `min_area_px`: `cv2.boundingRect` da la caja, `cv2.moments` da el centroide, y se marca `is_valid_mask=False` si la caja toca el borde del cuadro (para no falsear el calibre con un tomate cortado).
 
-**Parámetro que hay que ajustar según la fruta/fondo:** `hsv_lower`/`hsv_upper` — el rango de color a buscar. El valor por defecto del repo es deliberadamente amplio (casi todo el Hue) como punto de partida, no un valor final.
+**Dos modos de uso, según si se pasa `fondo_referencia` al constructor:**
 
-## 2. `funciones/seg_fondo.py` — segmentación por fondo + color
+| Modo | Cómo se llama | Cuándo usarlo |
+|---|---|---|
+| Solo color (por defecto) | `ClassicSegmenter(hsv_lower=..., hsv_upper=...)` | No hay foto del fondo vacío disponible, o el fondo no comparte color con ningún objeto que no sea fruta. |
+| Color + fondo | `ClassicSegmenter(hsv_lower=..., hsv_upper=..., fondo_referencia=foto_vacia)` | Hay una foto de referencia del fondo vacío (misma cámara/iluminación). Permite usar un rango de color mucho más amplio (detecta fruta de cualquier tono) sin agregar falsos positivos, porque el fondo ya descarta todo lo que no cambió. |
 
-`BackgroundColorSegmenter` combina dos máscaras con `AND`:
-- **Máscara de fondo:** `cv2.absdiff(frame, fondo_referencia)` — distinto al fondo vacío de referencia.
-- **Máscara de color:** igual que `seg.py`, pero puede recibir **varios** rangos HSV a la vez (se combinan con `OR` entre ellos).
-
-```python
-mascara_final = mascara_fondo  AND  (rango_color_1  OR  rango_color_2  OR  ...)
-```
-
-Mismo contrato de salida que `ClassicSegmenter` — se puede usar como reemplazo directo en `main_test.py`.
-
-**Requiere:** una foto de referencia del fondo vacío, tomada con la misma cámara/iluminación. No sirve para una sola foto suelta sin esa referencia.
+En ambos modos el resultado tiene el mismo formato — el resto del pipeline (`track.py`, `calib.py`, `madurez.py`, `manchas.py`, `registro.py`) no necesita saber cuál de los dos modos se usó.
 
 ---
 
@@ -124,5 +119,21 @@ Los IDs 2, 3 y 5 también se mantuvieron estables los 120 cuadros. Algunos IDs a
 
 ## 9. Qué falta / próximos pasos
 
+- ~~**Fusión de blobs que se tocan**~~ — **resuelto parcialmente con Watershed, ver sección 10.**
 - **Sustracción de fondo con cámara fija:** las pruebas de video real se hicieron con un cuadro cualquiera del mismo video como referencia de fondo (no había una toma vacía). Funciona, pero con margen ajustado. Recomendación: grabar unos segundos de la tela/cinta vacía con la cámara fija antes de poner la fruta.
-- **Reconocimiento de especie (OE4):** hoy el color/rango hay que ajustarlo a mano por especie. La idea de diseño es que el modelo entrenado (`modelo/`) reconozca la especie y el sistema elija automáticamente el perfil de parámetros (color, calibración, madurez) correspondiente.
+- **Reconocimiento de especie (OE4):** hoy el color/rango hay que ajustarlo a mano por especie. La idea de diseño es que el modelo entrenado (`modelo/`) reconozca la especie y el sistema elija automáticamente el perfil de parámetros (color, calibración, madurez) correspondiente — ver `modelo/README.md`.
+
+## 10. Separación de blobs que se tocan (Watershed) — resultado de la prueba
+
+`ClassicSegmenter(..., separar_contacto=True, ajuste_pico=0.4)` agrega un paso extra después de limpiar la máscara: en vez de aceptar cada región conectada como una sola instancia, calcula la **distancia de cada píxel al borde más cercano** (`cv2.distanceTransform`). El centro de un tomate está lejos de cualquier borde (distancia alta); el punto donde dos tomates se tocan está cerca de un borde por ambos lados (distancia baja). Eso separa la máscara en "centros seguros" (picos de distancia) y aplica `cv2.watershed` para cortar justo en el valle entre dos centros que están pegados.
+
+**Prueba con el video sintético de dos círculos que se tocan y se separan (`dataset/videos/sintetico_oclusion.mp4`):**
+
+| Cuadro | Situación | Sin `separar_contacto` | Con `separar_contacto=True` |
+|---|---|---|---|
+| #25 | Los dos círculos recién se tocan (silueta con forma de "8") | ![](evidencia_segmentacion/17_watershed_f25_sin.png) 1 instancia | ![](evidencia_segmentacion/18_watershed_f25_con.png) **2 instancias correctas** |
+| #28 | Un círculo pasa casi exactamente por delante del otro (solapamiento casi total) | 1 instancia | ![](evidencia_segmentacion/19_watershed_f28_no_se_pudo.png) **sigue siendo 1 — no se pudo separar** |
+
+**Por qué el cuadro #28 no se pudo arreglar, y por qué eso es correcto (no un bug):** cuando un objeto está casi exactamente delante del otro, la silueta 2D que ve la cámara es prácticamente idéntica a la de un solo círculo — no hay "valle" en la distancia al borde porque, geométricamente, no hay información suficiente en una sola imagen para saber que son dos. Esto es una oclusión real, no un problema de la máscara, y es justamente el caso para el que existe `track_kalman.py`: en vez de intentar separar el blob en ese cuadro, el filtro de Kalman sigue prediciendo la posición del tomate tapado usando su velocidad, y cuando vuelve a verse por separado unos cuadros después, lo reconecta con su ID (ver `docs/adaptacion.md`, fila de `track_kalman.py`).
+
+**Ajuste del parámetro `ajuste_pico`:** se probó con 0.3, 0.35, 0.4, 0.45 y 0.5 sobre el mismo video — 0.4 fue el valor donde el "cuello" entre los dos círculos recién tocándose queda por debajo del umbral (se separan) sin cortar de más un tomate sano. Valores más bajos (0.3-0.35) no alcanzaban a separar el cuadro #25; no se necesitó ir más arriba de 0.4 para este caso. Si en video real los tomates son de tamaño más variable que estos círculos sintéticos, puede que haga falta volver a ajustar este valor.
