@@ -64,9 +64,9 @@ Imagen real de tomates en planta, del set de ejemplos público de Laboro Tomato 
 |---|---|
 | ![](evidencia_segmentacion/05_foto_real_multitomate_original.png) | ![](evidencia_segmentacion/06_foto_real_multitomate_anotada.png) |
 
-Parámetros: `hsv_lower=(0,70,40)`, `hsv_upper=(10,255,255)` (rojo maduro), `kernel_size=9` (apertura y cierre iguales), `min_area_px=1500`. Con estos parámetros salen **7 instancias**. Los tomates verdes de la misma foto no entran — ver sección 4, es intencional y tiene una razón de fondo.
+Parámetros: `hsv_lower=(0,70,40)`, `hsv_upper=(10,255,255)` (rojo maduro), `kernel_size=9` (apertura y cierre iguales), `min_area_px=1500`. Con estos parámetros salen **7 instancias**. 
 
-**Corrección importante sobre esta misma imagen:** de esas 7 instancias, las etiquetadas 5 y 6 en la imagen de arriba **no son dos tomates distintos** — son **un solo tomate** cuyo contorno quedó partido en dos porque un tallo lo cruza por delante y rompe la máscara de color justo ahí. Esto se detectó al revisar la imagen con detalle y se corrige en la sección 5 (es un bug real del resultado, no solo una forma distinta de describirlo).
+**Corrección importante sobre esta misma imagen:** de esas 7 instancias, las etiquetadas 5 y 6 en la imagen de arriba **no son dos tomates distintos** — son **un solo tomate** cuyo contorno quedó partido en dos porque un tallo lo cruza por delante y rompe la máscara de color justo ahí. Esto se detectó al revisar la imagen con detalle y se corrige en la sección 5.
 
 
 ## 4. Evidencia 3: por qué el color solo no alcanza para fruta de cualquier color
@@ -75,7 +75,7 @@ Intento de ampliar `seg.py` con un segundo rango HSV para detectar también los 
 
 ![](evidencia_segmentacion/07_intento_verde_fallido.png)
 
-Resultado: casi toda la foto se marca como "tomate" — porque un tomate verde y una hoja tienen el mismo color. Esto **no es un umbral mal puesto**, es un límite real de segmentar solo por color cuando el fondo comparte el color del objeto. De ahí nace la opción `fondo_referencia` de `ClassicSegmenter` (sección 1): si hay una foto del fondo vacío, se puede exigir color Y distinto-al-fondo a la vez, así un rango amplio (que cubra verde y rojo) no se come toda la foto.
+Resultado: casi toda la foto se marca como "tomate" — porque un tomate verde y una hoja tienen el mismo color. Esto **no es un umbral mal puesto**, es un límite real de segmentar solo por color cuando el fondo comparte el color del objeto. De ahí nace la opción `fondo_referencia` de `ClassicSegmenter`: si hay una foto del fondo vacío, se puede exigir color Y distinto-al-fondo a la vez, así un rango amplio (que cubra verde y rojo) no se come toda la foto.
 
 ## 5. Evidencia 4: corregir blobs mal formados — un tallo que parte una fruta en dos, y frutas que se tocan
 
