@@ -16,7 +16,7 @@ Este documento junta todo lo relacionado específicamente con la **segmentación
 
 ## 1. `funciones/seg.py` — una sola clase, color solo o color + fondo
 
-Una única clase, `ClassicSegmenter`, recibe un cuadro BGR y devuelve `(mask, instances)`, donde `instances` es una lista (una por tomate detectado) de diccionarios con `bbox`, `centroid`, `area_px`, `contour` e `is_valid_mask`. (Hasta una versión anterior de este documento existían dos clases separadas, `ClassicSegmenter` y `BackgroundColorSegmenter` en un archivo `seg_fondo.py` — se unificaron en una sola porque hacían casi lo mismo.)
+Una única clase, `ClassicSegmenter`, recibe un cuadro BGR y devuelve `(mask, instances)`, donde `instances` es una lista (una por tomate detectado) de diccionarios con `bbox`, `centroid`, `area_px`, `contour` e `is_valid_mask`. 
 
 ```python
 raw_mask = mascara_color(frame)                          # 1 = color de tomate
