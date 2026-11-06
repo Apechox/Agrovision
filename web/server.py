@@ -19,7 +19,9 @@ Rutas:
     POST /api/roi                cuerpo JSON {"x":..,"y":..,"w":..,"h":..} (zona de medición, px)
                                  o {"completa": true} para volver al cuadro completo
     POST /api/cola/quitar?i=     quita el archivo i de la cola | /api/cola/vaciar vacía la cola
-    POST /api/cola/mover?de=&a=  cambia el orden de análisis (solo archivos en espera)    POST /api/iniciar | /api/detener | /api/repetir
+    POST /api/cola/mover?de=&a=  cambia el orden de análisis (solo archivos en espera)
+    POST /api/iniciar | /api/pausa | /api/detener | /api/repetir
+                                 /api/pausa alterna pausa y continuar (sigue en el mismo cuadro)
 
 Seguridad: escucha SOLO en 127.0.0.1 y rechaza peticiones con cabecera Origin ajena
 (evita que otra página abierta en tu navegador dispare acciones sobre la cámara).
@@ -169,6 +171,8 @@ class Handler(BaseHTTPRequestHandler):
         m = self.motor
         if url.path == "/api/iniciar":
             return self._accion(m.iniciar())
+        if url.path == "/api/pausa":
+            return self._accion(m.alternar_pausa())
         if url.path == "/api/detener":
             return self._accion(m.detener())
         if url.path == "/api/repetir":

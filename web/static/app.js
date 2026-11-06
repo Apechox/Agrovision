@@ -120,7 +120,17 @@ function elegirPanel(id) {
   panel = id;
   document.querySelectorAll('[data-panel]').forEach((b) => b.classList.toggle('activa', b.dataset.panel === id));
   document.querySelectorAll('.panel').forEach((p) => (p.hidden = p.id !== id));
-  if (id === 'p-dash') Dash.pintar();
+}
+
+// ---------- dashboard en pantalla completa ----------
+const dashAbierto = () => !$('#vista-dash').hidden;
+function abrirDashboard() {
+  $('.rejilla').hidden = true; $('#vista-dash').hidden = false;
+  window.scrollTo(0, 0); Dash.pintar();
+}
+function cerrarDashboard() {
+  $('#vista-dash').hidden = true; $('.rejilla').hidden = false;
+  pintarRoi();  // el visor estaba oculto: recalcula la posición de la zona de medición
 }
 document.querySelectorAll('[data-panel]').forEach((b) => b.addEventListener('click', () => elegirPanel(b.dataset.panel)));
 
@@ -135,7 +145,8 @@ function render(s) {
     hsvIniciado = true; hsv = { min: [...s.hsv.min], max: [...s.hsv.max] }; pintarSliders();
   }
 
-  const [txt, clase] = s.interrumpida ? ['Fuente interrumpida', 'pill-aviso'] : (ESTADOS[s.estado] || ESTADOS.ESPERANDO);
+  const [txt, clase] = s.interrumpida ? ['Fuente interrumpida', 'pill-aviso']
+    : s.pausada ? ['En pausa', 'pill-aviso'] : (ESTADOS[s.estado] || ESTADOS.ESPERANDO);
   const pill = $('#pill'); pill.textContent = '● ' + txt; pill.className = 'pill ' + clase;
   $('#meta').textContent = [s.mensaje, s.ocupado && s.fps ? `${s.fps} FPS de proceso` : '', s.cuadros ? `cuadros: ${s.cuadros}` : '']
     .filter(Boolean).join(' · ');
@@ -144,7 +155,9 @@ function render(s) {
   recibirRoi(s.roi);
 
   $('#btn-iniciar').disabled = !s.cola.some((c) => c.estado === 'En espera') || s.ocupado;
-  $('#btn-detener').disabled = !s.ocupado;
+  $('#btn-pausa').disabled = !s.ocupado;
+  $('#btn-pausa').innerHTML = `<kbd>S</kbd> ${s.pausada ? 'Continuar' : 'Pausar'}`;
+  $('#btn-terminar').disabled = !s.ocupado;
   $('#btn-guardar').disabled = !s.puede_guardar;
   pintarCola(s);
 
@@ -167,7 +180,7 @@ function render(s) {
     ? s.incidencias.map((i) => `<li><b>${esc(i.hora)} · ${esc(i.origen)}</b> — ${esc(i.causa)} <span class="chico">(${esc(i.fuente)})</span></li>`).join('')
     : '<li class="vacio">Sin incidencias.</li>';
   Dash.setSesion(s.registro);  // el dashboard calcula en el navegador con lo que la página acaba de leer
-  if (panel === 'p-dash') Dash.pintar();
+  if (dashAbierto()) Dash.pintar();  // se actualiza en vivo mientras se procesa
 }
 function pintarCola(s) {
   const caja = $('#cola-caja');
@@ -220,6 +233,8 @@ async function refrescar() {
 // ---------- dashboard ----------
 // La lógica vive en dashboard.js (Dash): lee la sesión actual o un CSV cargado.
 Dash.iniciar();
+$('#btn-dash').addEventListener('click', abrirDashboard);
+$('#dash-salir').addEventListener('click', cerrarDashboard);
 
 // ---------- zona de medición (ROI) arrastrable ----------
 const ROI_MIN = 20, roiEl = $('#roi');
@@ -343,7 +358,7 @@ async function subir(archivos) {
   }
 }
 const accion = (url) => async () => { await post(url); refrescar(); };
-const iniciar = accion('/api/iniciar'), detener = accion('/api/detener'), repetir = async () => {
+const iniciar = accion('/api/iniciar'), pausar = accion('/api/pausa'), terminar = accion('/api/detener'), repetir = async () => {
   if (ultimo && JSON.parse(ultimo).puede_guardar && !confirm('Hay registros que se perderán. ¿Continuar?')) return;
   await post('/api/repetir'); refrescar();
 };
@@ -358,7 +373,8 @@ async function guardar() {
   }
 }
 $('#btn-iniciar').addEventListener('click', iniciar);
-$('#btn-detener').addEventListener('click', detener);
+$('#btn-pausa').addEventListener('click', pausar);
+$('#btn-terminar').addEventListener('click', terminar);
 $('#btn-guardar').addEventListener('click', guardar);
 $('#btn-vaciar').addEventListener('click', async () => {
   if (ultimo && JSON.parse(ultimo).puede_guardar && !confirm('Hay registros que se perderán. ¿Vaciar la cola?')) return;
@@ -385,8 +401,8 @@ zona.addEventListener('drop', (e) => { const f = [...e.dataTransfer.files]; if (
 document.addEventListener('keydown', (e) => {
   if (e.ctrlKey || e.metaKey || e.altKey || ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
   const k = e.key.toLowerCase();
-  if (k === 'q') input.click(); else if (k === 'w') iniciar(); else if (k === 's' || k === 'escape') detener();
-  else if (k === 'e') guardar(); else if (k === 'r') repetir(); else if (k === 'd') elegirPanel('p-dash');
+  if (k === 'q') input.click(); else if (k === 'w') iniciar(); else if (k === 's') pausar(); else if (k === 'escape') (dashAbierto() ? cerrarDashboard() : terminar());
+  else if (k === 'e') guardar(); else if (k === 'r') repetir(); else if (k === 'd') (dashAbierto() ? cerrarDashboard() : abrirDashboard());
 });
 
 let didInicial = false;

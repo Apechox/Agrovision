@@ -60,9 +60,12 @@ class Motor:
         self.cuadros = 0
         self.t_inicio = 0.0
         self.interrumpida = False
+        self.pausada = False        # el hilo sigue vivo y espera; al continuar sigue en el mismo cuadro
+        self._t_pausa = 0.0
+        self._mensaje_previo = ""
         self.detener_ev = threading.Event()
         self.hilo = None
-        self.hsv = HSV_DEFECTO      # se reemplaza completo (tupla), nunca se muta
+        self.hsv = HSV_DEFECTO     # se reemplaza completo (tupla), nunca se muta
         self.roi = None             # zona de medición (x, y, ancho, alto); None = cuadro completo
         self.frame_vista = None     # cuadro fijo para la vista previa (imagen o 1.er cuadro de un video)
         self.calibracion = PipelineInspeccion().estado_calibracion
@@ -289,7 +292,7 @@ class Motor:
             if self._lote is None:
                 self._lote = time.strftime("S%Y%m%d_%H%M%S")
             self.cuadros, self.t_inicio = 0, time.perf_counter()
-            self.interrumpida = False
+            self.interrumpida = self.pausada = False
             self.estado, self.mensaje = PROCESANDO, "Procesando…"
             self.detener_ev = threading.Event()
             self.hilo = threading.Thread(target=self._trabajador, args=(self.detener_ev,), daemon=True)
@@ -297,12 +300,33 @@ class Motor:
             return True, "Procesando…"
 
     def detener(self):
+        """Termina la sesión: lo ya registrado se conserva y el archivo en curso queda 'Detenido'."""
         with self.lock:
             if self._ocupado():
+                self.pausada = False
                 self.detener_ev.set()
                 self.mensaje = "Deteniendo…"
                 return True, self.mensaje
             return False, "No hay una sesión en curso"
+
+    def alternar_pausa(self):
+        """Pausa el análisis o lo continúa desde el mismo cuadro (no reinicia nada)."""
+        with self.lock:
+            if not self._ocupado() or self.detener_ev.is_set():
+                return False, "No hay una sesión en curso"
+            if not self.pausada:
+                self.pausada, self._t_pausa = True, time.perf_counter()
+                self._mensaje_previo = self.mensaje
+                self.mensaje = "En pausa. Presiona S para continuar."
+                return True, self.mensaje
+            self.pausada = False
+            self.t_inicio += time.perf_counter() - self._t_pausa  # la pausa no cuenta para los FPS
+            self.mensaje = self._mensaje_previo
+            return True, "Continuando el análisis"
+
+    def _esperar_pausa(self, detener):
+        while self.pausada and not detener.is_set() and self._vigente(detener):
+            detener.wait(0.1)
 
     def repetir(self):
         """Descarta los resultados y deja toda la cola de nuevo en espera."""
@@ -313,7 +337,7 @@ class Motor:
                 it["estado"], it["sesion"] = EN_ESPERA, None
             self.sesion, self.ultimo, self._lote = None, None, None
             self.frame_id = self.cuadros = 0
-            self.interrumpida = False
+            self.interrumpida = self.pausada = False
             if self.frame_vista is not None:
                 self._previsualizar()
             self.estado = LISTO if self.cola else ESPERANDO
@@ -332,6 +356,9 @@ class Motor:
         """Procesa, uno tras otro, los archivos de la cola que están en espera."""
         try:
             while not detener.is_set():
+                self._esperar_pausa(detener)  # también entre archivo y archivo de la cola
+                if detener.is_set():
+                    break
                 with self.lock:
                     item = next((it for it in self.cola if it["estado"] == EN_ESPERA), None)
                     if item is None or not self._vigente(detener):
@@ -352,6 +379,7 @@ class Motor:
         finally:
             with self.lock:
                 if self._vigente(detener):
+                    self.pausada = False
                     if self.estado == PROCESANDO:
                         self.estado = RESULTADO
                     if detener.is_set():
@@ -394,6 +422,9 @@ class Motor:
         fuente = VideoSource(source=origen, session_id=sesion.id_sesion)
         try:
             while not detener.is_set():
+                self._esperar_pausa(detener)  # en pausa no se lee ningún cuadro: al continuar sigue donde quedó
+                if detener.is_set():
+                    break
                 t0 = time.perf_counter()
                 estado, meta, cuadro = fuente.read_frame()
                 if meta["suspend_observations"]:
@@ -462,7 +493,8 @@ class Motor:
 
     def estado_json(self):
         with self.lock:
-            seg = max(time.perf_counter() - self.t_inicio, 1e-6) if self.t_inicio else 1.0
+            ahora = self._t_pausa if self.pausada else time.perf_counter()
+            seg = max(ahora - self.t_inicio, 1e-6) if self.t_inicio else 1.0
             obs, reg, inc = [], [], []
             if self.ultimo:
                 obs = [{"id": o.id, "ancho_px": o.ancho_px, "ancho_mm": o.ancho_mm,
@@ -488,7 +520,7 @@ class Motor:
                 "sesion": self.sesion.id_sesion if self.sesion else None,
                 "cuadros": self.cuadros, "frame_id": self.frame_id,
                 "fps": round(self.cuadros / seg, 1) if self._ocupado() else None,
-                "ocupado": self._ocupado(), "interrumpida": self.interrumpida,
+                "ocupado": self._ocupado(), "interrumpida": self.interrumpida, "pausada": self.pausada,
                 "calibracion": self.calibracion,
                 "hsv": {"min": list(self.hsv[0]), "max": list(self.hsv[1]),
                         "defecto_min": list(HSV_DEFECTO[0]), "defecto_max": list(HSV_DEFECTO[1])},

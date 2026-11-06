@@ -19,7 +19,7 @@
   <!-- ============ Columna izquierda: video + ajustes + pipeline ============ -->
   <section class="col-izq">
     <div class="tarjeta">
-      <div class="tabs" role="tablist" aria-label="Vista del procesamiento">
+      <div class="tabs did" role="tablist" aria-label="Vista del procesamiento">
         <button class="tab activa" data-vista="detecciones" role="tab">1 · Detecciones</button>
         <button class="tab did" data-vista="mascara" role="tab">2a · Máscara HSV</button>
         <button class="tab did" data-vista="limpia" role="tab">2b · Máscara limpia</button>
@@ -76,7 +76,8 @@
     <div class="tarjeta">
       <div class="fila botones">
         <button id="btn-iniciar" class="prim"><kbd>W</kbd> Iniciar</button>
-        <button id="btn-detener" class="sec"><kbd>S</kbd> Detener</button>
+        <button id="btn-pausa" class="sec" title="Pausa el análisis; vuelve a presionar para continuar donde quedó"><kbd>S</kbd> Pausar</button>
+        <button id="btn-terminar" class="sec" title="Termina la sesión: conserva lo registrado y no se puede continuar"><kbd>Esc</kbd> Terminar</button>
         <button id="btn-guardar" class="sec" title="Guarda el CSV para Excel, el CSV para programas y la vista anotada"><kbd>E</kbd> Guardar</button>
         <button id="btn-repetir" class="sec" title="Descarta los resultados y vuelve a poner toda la cola en espera"><kbd>R</kbd> Repetir</button>
       </div>
@@ -113,7 +114,7 @@
         <button class="tab activa" data-panel="p-actual" role="tab">Actuales</button>
         <button class="tab" data-panel="p-registro" role="tab">Registro</button>
         <button class="tab" data-panel="p-incid" role="tab" id="tab-incid">Incidencias</button>
-        <button class="tab" data-panel="p-dash" role="tab"><kbd>D</kbd> Dashboard</button>
+        <button class="tab" id="btn-dash" title="Abre el dashboard en pantalla completa"><kbd>D</kbd> Dashboard</button>
       </div>
 
       <div id="p-actual" class="panel">
@@ -136,25 +137,37 @@
         <ul id="lista-incid" class="incid"></ul>
       </div>
 
-      <div id="p-dash" class="panel" hidden>
-        <div class="fila dash-origen">
-          <label><input type="radio" name="dash-origen" value="sesion" checked> Sesión actual</label>
-          <label><input type="radio" name="dash-origen" value="csv"> Archivo CSV</label>
-          <button id="dash-cargar" class="sec chico-btn" title="Acepta el CSV para Excel (;) o el de datos (,)">Cargar CSV…</button>
-          <input type="file" id="dash-archivo" accept=".csv,text/csv" hidden>
-        </div>
-        <p id="dash-nombre" class="chico"></p>
-        <div class="fila dash-filtros">
-          <label>Archivo <select id="dash-f-archivo"></select></label>
-          <label>Fruto <select id="dash-f-fruto"></select></label>
-        </div>
-        <p id="titulo-dash" class="chico"></p>
-        <div id="dash-kpi" class="kpis"></div>
-        <div id="graficas" class="graficas"></div>
-      </div>
     </div>
   </section>
 </main>
+
+<!-- ============ Dashboard: vista de ancho completo (sección 6.2.2 del documento) ============ -->
+<section id="vista-dash" class="dash-pagina" hidden aria-label="Dashboard de análisis">
+  <div class="dash-cab">
+    <button id="dash-salir" class="sec"><kbd>Esc</kbd> ← Salir</button>
+    <div class="dash-titulo"><h2>AgroVision</h2><p>Dashboard de análisis</p></div>
+    <div class="dash-controles">
+      <label><input type="radio" name="dash-origen" value="sesion" checked> Sesión actual</label>
+      <label><input type="radio" name="dash-origen" value="csv"> Archivo CSV</label>
+      <button id="dash-cargar" class="sec chico-btn" title="Acepta el CSV para Excel (;) o el de datos (,)">Cargar CSV…</button>
+      <input type="file" id="dash-archivo" accept=".csv,text/csv" hidden>
+      <label>Archivo <select id="dash-f-archivo"></select></label>
+    </div>
+  </div>
+  <p id="dash-nombre" class="chico"></p>
+  <p id="titulo-dash" class="chico"></p>
+
+  <div id="donas" class="donas"></div>
+
+  <div class="dash-pie">
+    <label class="dash-fruto">Fruto: <select id="dash-f-fruto"></select></label>
+    <div id="dash-total" class="dash-total"></div>
+  </div>
+
+  <h3 class="dash-sub">Más indicadores</h3>
+  <div id="dash-kpi" class="kpis"></div>
+  <div id="graficas" class="graficas"></div>
+</section>
 
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 <script src="/dashboard.js"></script>

@@ -149,7 +149,40 @@ tr.aviso td { color: var(--aviso); font-weight: 600; }
 .barra-pista { background: var(--tabla-alt); border: 1px solid var(--borde); border-radius: 6px; height: 14px; overflow: hidden; }
 .barra-valor { background: var(--prim); height: 100%; }
 
-/* dashboard */
+/* dashboard: paleta azul ordinal (validada en claro y oscuro con el validador de la pauta) */
+:root { --d1: #104281; --d2: #256abf; --d3: #5598e7; --d4: #86b6ef; --dn: #898781;
+  --dt1: #ffffff; --dt2: #ffffff; --dt3: #0b0b0b; --dt4: #0b0b0b; --dtn: #0b0b0b; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --d1: #86b6ef; --d2: #5598e7; --d3: #256abf; --d4: #184f95; --dn: #898781;
+    --dt1: #0b0b0b; --dt2: #0b0b0b; --dt3: #ffffff; --dt4: #ffffff; --dtn: #0b0b0b; }
+}
+.dash-pagina { padding: 16px 20px; max-width: 1500px; margin: 0 auto; }
+.dash-pagina[hidden], .rejilla[hidden] { display: none; }
+.dash-cab { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 8px; }
+.dash-titulo h2 { font-size: 22px; margin: 0; } .dash-titulo p { color: var(--suave); font-size: 13px; }
+.dash-controles { margin-left: auto; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font-size: 13px; }
+.dash-controles label { display: inline-flex; align-items: center; gap: 6px; }
+.dash-controles select, .dash-fruto select { padding: 5px 8px; border-radius: 6px; border: 1px solid var(--borde);
+  background: var(--tarjeta); color: var(--texto); max-width: 200px; font: inherit; }
+.donas { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-top: 12px; }
+.don-card { background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 12px; padding: 16px; }
+.don-card h3 { margin: 0 0 6px; font-size: 18px; }
+.don { display: block; width: 100%; max-width: 230px; margin: 6px auto 14px; }
+.don text { text-anchor: middle; dominant-baseline: central; fill: var(--texto); }
+.don .don-n { font-size: 7.4px; font-weight: 700; } .don .don-l { font-size: 2.9px; fill: var(--suave); }
+.don .don-p { font-size: 2.7px; font-weight: 700; }
+.don circle { stroke-linecap: butt; }
+.don-leyenda { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.don-leyenda li { display: grid; grid-template-columns: 14px 1fr auto; gap: 8px; align-items: center; font-size: 14px; }
+.don-pt { width: 12px; height: 12px; border-radius: 50%; }
+.don-val { font-weight: 600; } .don-val small { color: var(--suave); font-weight: 400; }
+.dash-pie { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
+.dash-fruto { font-weight: 600; display: inline-flex; align-items: center; gap: 8px; }
+.dash-total { background: #1f3a63; color: #fff; font-weight: 700; padding: 10px 18px; border-radius: 8px; }
+.dash-sub { font-size: 14px; margin: 20px 0 4px; color: var(--suave); }
+.dash-pagina .graficas { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); align-items: start; }
+.dash-pagina .grafica { background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 12px; padding: 14px; }
+/* dashboard (indicadores) */
 .dash-origen, .dash-filtros { gap: 14px; align-items: center; }
 .dash-origen label, .dash-filtros label { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
 .dash-filtros select { padding: 4px 6px; border-radius: 6px; border: 1px solid var(--borde);

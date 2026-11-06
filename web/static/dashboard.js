@@ -140,6 +140,53 @@
     return `<div class="grafica"><h3>${esc(titulo)}</h3>${filas}</div>`;
   }
 
+  // Donut como en la sección 6.2.2 del documento. Paleta azul ordinal validada (claro y oscuro):
+  // la categoría que el documento lista primero toma el tono más marcado. Los porcentajes van
+  // sobre el arco si caben; la leyenda da nombre, porcentaje y cantidad (sirve de vista en tabla).
+  const ORDEN_MADUREZ = ['Maduro', 'En transición', 'Verde'];
+  const ORDEN_CALIDAD = ['Sin manchas detectadas', 'Sin manchas', 'Con manchas detectadas', 'Con manchas'];
+  const NEUTRO = /^(no evaluable|no aplica|pendiente|sin dato|otros)/i;
+
+  function donut(titulo, datos, vacio, orden) {
+    const total = Object.values(datos).reduce((a, b) => a + b, 0);
+    const R = 15.9155, GAP = 0.9;
+    let arcos = '', leyenda = '', centro;
+    if (!total) {
+      arcos = `<circle cx="21" cy="21" r="${R}" fill="none" stroke="var(--borde)" stroke-width="6.5"/>`;
+      centro = '<text x="21" y="22" class="don-l">Sin datos</text>';
+      leyenda = `<p class="chico">${esc(vacio)}</p>`;
+    } else {
+      const claves = Object.keys(datos).sort((a, b) => {
+        const ia = orden ? orden.indexOf(a) : -1, ib = orden ? orden.indexOf(b) : -1;
+        return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || datos[b] - datos[a];
+      });
+      const colores = claves.filter((k) => !NEUTRO.test(k)), neutros = claves.filter((k) => NEUTRO.test(k));
+      const partes = colores.slice(0, 4).map((k, i) => ({ k, n: datos[k], tono: i + 1 }));
+      const otros = colores.slice(4).reduce((a, k) => a + datos[k], 0);
+      neutros.forEach((k) => partes.push({ k, n: datos[k], tono: 'n' }));
+      if (otros) partes.push({ k: 'Otros', n: otros, tono: 'n' });
+      let acum = 0;
+      partes.forEach((p) => {
+        const pct = (p.n / total) * 100, largo = partes.length === 1 ? 100 : Math.max(pct - GAP, 0.01);
+        const dato = `${esc(p.k)}: ${p.n} (${Math.round(pct)}%)`;
+        arcos += `<circle cx="21" cy="21" r="${R}" fill="none" stroke="var(--d${p.tono})" stroke-width="6.5" ` +
+          `stroke-dasharray="${largo} ${100 - largo}" stroke-dashoffset="${25 - acum}"><title>${dato}</title></circle>`;
+        if (pct >= 8) {  // etiqueta dentro del arco solo si cabe; si no, queda en la leyenda
+          const ang = ((acum + pct / 2) / 100) * 2 * Math.PI - Math.PI / 2;
+          arcos += `<text x="${(21 + R * Math.cos(ang)).toFixed(2)}" y="${(21 + R * Math.sin(ang)).toFixed(2)}" ` +
+            `class="don-p" style="fill:var(--dt${p.tono})">${Math.round(pct)}%</text>`;
+        }
+        acum += pct;
+        leyenda += `<li><span class="don-pt" style="background:var(--d${p.tono})"></span><span class="don-nom">${esc(p.k)}</span>` +
+          `<span class="don-val">${Math.round(pct)}% <small>(${p.n})</small></span></li>`;
+      });
+      centro = `<text x="21" y="20.6" class="don-n">${total}</text><text x="21" y="25.4" class="don-l">${total === 1 ? 'fruto' : 'frutos'}</text>`;
+      leyenda = `<ul class="don-leyenda">${leyenda}</ul>`;
+    }
+    return `<div class="don-card"><h3>${esc(titulo)}</h3>` +
+      `<svg viewBox="0 0 42 42" class="don" role="img" aria-label="${esc(titulo)}">${arcos}${centro}</svg>${leyenda}</div>`;
+  }
+
   function dibujarHistograma(h) {
     if (!h.length) return '<div class="grafica"><h3>Distribución del ancho (mm)</h3><p class="chico">Sin datos</p></div>';
     const tope = Math.max(...h.map((c) => c.n));
@@ -171,16 +218,18 @@
   const $ = (s) => document.querySelector(s);
 
   function llenar(select, opciones, valor, todos) {
-    const html = `<option value="">${todos}</option>` + opciones.map((o) => `<option value="${esc(o)}">${esc(o)}</option>`).join('');
+    const html = (todos ? `<option value="">${todos}</option>` : '') +
+      opciones.map((o) => `<option value="${esc(o)}">${esc(o)}</option>`).join('');
     if (select.dataset.firma !== html) { select.innerHTML = html; select.dataset.firma = html; }
-    select.value = opciones.includes(valor) ? valor : '';
+    select.value = opciones.includes(valor) ? valor : (todos ? '' : (opciones[0] ?? ''));
   }
 
   function pintar() {
-    if (!$('#p-dash') || $('#p-dash').hidden) return;
+    if (!$('#vista-dash') || $('#vista-dash').hidden) return;
     const filas = est.origen === 'csv' ? (est.csv ? est.csv.filas : []) : est.actual;
     llenar($('#dash-f-archivo'), [...new Set(filas.map((f) => f.fuente))], est.archivo, 'Todos');
-    llenar($('#dash-f-fruto'), [...new Set(filas.map((f) => base(f.tipo)).filter(Boolean))], est.fruto, 'Todos');
+    const frutos = [...new Set(filas.map((f) => base(f.tipo)).filter(Boolean))];
+    llenar($('#dash-f-fruto'), frutos, est.fruto, frutos.length > 1 ? 'Todos' : null);  // un solo fruto: "Fruto: Tomate"
     est.archivo = $('#dash-f-archivo').value; est.fruto = $('#dash-f-fruto').value;
     $('#dash-nombre').textContent = est.csv ? `CSV cargado: ${est.csv.nombre} (${est.csv.filas.length} filas)` : 'Ningún CSV cargado';
 
@@ -188,6 +237,7 @@
       $('#titulo-dash').textContent = est.origen === 'csv'
         ? 'Carga un CSV exportado desde AgroVision para ver sus gráficas.'
         : 'Todavía no hay registros: procesa archivos o carga un CSV.';
+      $('#donas').innerHTML = ''; $('#dash-total').textContent = '';
       $('#dash-kpi').innerHTML = ''; $('#graficas').innerHTML = '';
       return;
     }
@@ -195,12 +245,14 @@
     const origen = est.origen === 'csv' ? `CSV «${est.csv.nombre}»` : 'sesión actual';
     $('#titulo-dash').textContent = `Origen: ${origen} · Registros definitivos: ${r.definitivas.length} ` +
       `(provisionales excluidos: ${r.provisionales})` + (r.estimadas ? ' · Medidas estimadas: calibración pendiente de validar' : '');
+    $('#donas').innerHTML =
+      donut('Madurez Visual', r.madurez, 'Sin datos: módulo A3.1 pendiente', ORDEN_MADUREZ) +
+      donut('Calidad Visual', r.manchas, 'Sin datos: módulo A3.2 pendiente', ORDEN_CALIDAD) +
+      donut('Calibre Aparente', r.calibre, 'Sin datos', ORDEN_CALIBRE);
+    $('#dash-total').textContent = `Total de frutos analizados: ${r.definitivas.length}`;
     $('#dash-kpi').innerHTML = dibujarKpis(r, filas);
     $('#graficas').innerHTML =
-      barras('Calibre aparente', r.calibre, 'Sin datos', ORDEN_CALIBRE) +
       dibujarHistograma(r.histograma) +
-      barras('Madurez visual', r.madurez, 'Sin datos: módulo A3.1 pendiente') +
-      barras('Calidad visual (manchas)', r.manchas, 'Sin datos: módulo A3.2 pendiente') +
       barras('Estado del registro', r.estados, 'Sin datos') +
       dibujarTabla(r.porArchivo) +
       '<p class="chico">Los cortes de calibre (55 y 70 mm) son provisionales hasta que el equipo defina los oficiales.</p>';
