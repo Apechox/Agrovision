@@ -68,7 +68,6 @@ Parámetros: `hsv_lower=(0,70,40)`, `hsv_upper=(10,255,255)` (rojo maduro), `ker
 
 **Corrección importante sobre esta misma imagen:** de esas 7 instancias, las etiquetadas 5 y 6 en la imagen de arriba **no son dos tomates distintos** — son **un solo tomate** cuyo contorno quedó partido en dos porque un tallo lo cruza por delante y rompe la máscara de color justo ahí. Esto se detectó al revisar la imagen con detalle y se corrige en la sección 5 (es un bug real del resultado, no solo una forma distinta de describirlo).
 
-**Importante — el "ID" que se ve en esta imagen no es un ID de seguimiento:** es solo el orden en que `seg.py` devolvió la lista de instancias para ESTE cuadro. El ID que persiste entre cuadros lo asigna `track.py`/`track_kalman.py`, no `seg.py` — ver sección 7 para la demostración de esa diferencia.
 
 ## 4. Evidencia 3: por qué el color solo no alcanza para fruta de cualquier color
 
