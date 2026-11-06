@@ -1,4 +1,4 @@
-# Segmentación de tomates (A2.3) — código y evidencia de funcionamiento
+# Segmentación de tomates — código y evidencia de funcionamiento
 
 Este documento junta todo lo relacionado específicamente con la **segmentación**: qué hace el código, por qué está hecho así, y la evidencia de que funciona (y de cuándo no, y cómo se corrigió).
 
@@ -132,25 +132,25 @@ Video real del equipo: `dataset/videos/tomates_sabana_gris_2.mp4`, cuadro #200 (
 
 ## 7. Evidencia 6: persistencia del ID entre cuadros (segmentación → tracking)
 
-Mismo video (`tomates_sabana_gris_2.mp4`), usando `ClassicSegmenter` + `track.py` (`CentroidTracker`). Se siguió el mismo video entre los cuadros 0 y 120 y se registró qué ID de tracking tenía cada tomate en cada cuadro.
+La sección 6 mostró que el método combinado (fondo + color amplio) detecta tomates que el color estricto se pierde (el caso del tomate anaranjado, 14/15 vs 15/15). Esta sección prueba el paso siguiente: que esa detección completa también se **sostenga entre cuadros**, para que `track.py` le pueda asignar un ID que no se pierda — si la segmentación falla intermitentemente, ningún tracker puede arreglar eso después, porque simplemente no recibe nada que seguir en los cuadros donde falló.
 
-El tomate marcado en **rojo** es el mismo en los 3 cuadros — nótese que se desplaza en la imagen (por el paneo de la cámara, los tomates en sí no se mueven) pero conserva **ID 1** todo el tiempo:
+Mismo video (`tomates_sabana_gris_2.mp4`), mismos cuadros #20/#60/#100, usando ya el método final: `ClassicSegmenter` con `fondo_referencia` + color amplio (igual que en la sección 6) + `track.py` (`CentroidTracker`).
 
 | Cuadro #20 | Cuadro #60 | Cuadro #100 |
 |---|---|---|
-| ![](evidencia_segmentacion/14_seguimiento_id_cuadro020.png) | ![](evidencia_segmentacion/15_seguimiento_id_cuadro060.png) | ![](evidencia_segmentacion/16_seguimiento_id_cuadro100.png) |
+| ![](evidencia_segmentacion/22_final_combinado_cuadro020.png) | ![](evidencia_segmentacion/23_final_combinado_cuadro060.png) | ![](evidencia_segmentacion/24_final_combinado_cuadro100.png) |
 
-Centroide del tomate ID 1 en cada cuadro — el desplazamiento es gradual y consistente, no un salto (lo que confirmaría que es el mismo objeto, no una reasignación casual del número):
-
-| Cuadro | Centroide (x, y) |
+| Cuadro | IDs presentes |
 |---|---|
-| 20 | (372, 700) |
-| 60 | (364, 696) |
-| 100 | (320, 692) |
+| 20 | 1, 2, 3, 4, 5 |
+| 60 | 1, 2, 3, 4, 5 |
+| 100 | 1, 2, 3, 4, 5 |
 
-Los IDs 2, 3 y 5 también se mantuvieron estables los 120 cuadros. 
+**Los 5 IDs se mantienen exactamente iguales en los 3 cuadros, sin excepción.** El **ID 4** es justamente el tomate anaranjado/pintón que el método de solo color (sección 6) no alcanzaba a detectar en absoluto — acá queda con un ID estable desde el cuadro 20 hasta el 100, como cualquier otro tomate.
 
-**Por qué importa esto para el resto del pipeline:** `seg.py` entrega la lista de instancias *sin* ID persistente — es `track.py`/`track_kalman.py` quien lo agrega, comparando centroides entre cuadros consecutivos. Una vez que el tomate tiene un ID estable, el resto del pipeline (calibre, madurez, manchas y registro) puede calcularlo por separado sin mezclarlo con el tomate vecino.
+**Comparado con el método original (solo color estricto):** usando ese mismo método sobre los mismos cuadros, ese tomate anaranjado no mantenía un ID — su color solo caía dentro del rango "rojo puro" por momentos (según el reflejo/ángulo de luz de cada cuadro), así que `seg.py` a veces no entregaba ninguna instancia ahí. Cada vez que volvía a aparecer, `track.py` lo veía como un tomate "nuevo" (porque ya habían pasado más de `max_disappeared` cuadros sin verlo) y le asignaba un **número de ID distinto cada vez** — de ahí que en esa prueba aparecieran números sueltos como ID 6, 7, 8 que en realidad eran el mismo tomate reapareciendo, no tomates nuevos.
+
+**Conclusión:** el método combinado no solo detecta más tomates por cuadro — además evita que el tracker "desperdicie" IDs nuevos en tomates que en realidad ya venía siguiendo, porque la segmentación deja de parpadear. Es la base correcta para que el ID que ve `track.py` sea confiable para calibre/madurez/manchas/registro más adelante.
 
 ## 8. Qué falta / próximos pasos
 
