@@ -1,6 +1,6 @@
 # AgroVision
 
-Prototipo de inspección visual de tomates para TEL328. La versión actual muestra la máscara HSV, la máscara después de la apertura y el cierre, y una vista con los contornos, centroides e IDs, calibre estimado, madurez visual y manchas por tomate.
+Prototipo de inspección visual de tomates para TEL328. El flujo básico muestra la máscara HSV, la máscara después de la apertura y el cierre, y una vista con contornos, centroides e IDs. Permite procesar videos sin ventanas y guardar evidencia. El flujo ampliado de atributos y CSV tiene dependencias pendientes de integrar.
 
 ## Setup venv
 
@@ -45,14 +45,33 @@ Para analizar un video, reemplaza la ruta de ejemplo por la del archivo:
 python main_test.py "dataset/videos/piloto.mp4"
 ```
 
-Para exportar el registro consolidado por tomate (RF7: calibre, madurez y manchas, una fila por ID):
+Para procesar un video completo y guardar las tres vistas juntas y un resumen técnico:
 
 ```bash
-python main_test.py --foto dataset/fotos/summerlast.png --salida-csv salida/registro.csv
-python main_test.py "dataset/videos/piloto.mp4" --salida-csv salida/registro.csv --sesion PILOTO_01
+python main_test.py "../VIDEOS/tomates_sabana_gris_1.mp4" --tracker centroide --sin-ventanas --salida-video salidas/hito2/centroide/tomates_sabana_gris_1.mp4 --resumen salidas/hito2/centroide/resumen.json
 ```
 
-Consulta opciones, incluidos los límites HSV, con `python main_test.py --help`.
+Usa `--tracker kalman` para ejecutar el mismo flujo con el filtro de Kalman.
+El MP4 conserva el FPS de entrada y muestra, de izquierda a derecha, las detecciones,
+la máscara HSV y la máscara limpia. El JSON registra el hash del video, los parámetros
+HSV, el seguidor, los cuadros procesados y los IDs asignados. Estos contadores requieren
+anotaciones manuales para convertirse en métricas de exactitud.
+
+Los videos originales deben estar disponibles en `../VIDEOS/`. Las salidas se guardan
+localmente en `salidas/`, excluida de Git junto con `.venv/`.
+Para cerrar el entorno ejecuta `deactivate`.
+
+Consulta todas las opciones con `python main_test.py --help`.
+El procedimiento, los resultados de los cinco clips y las incidencias están en
+[Pruebas de video del Hito 2](docs/pruebas_video_hito2.md).
+
+## Flujo ampliado pendiente de integración
+
+`main_test2.py` agrega calibre, madurez, manchas y registro por ID. Requiere
+`funciones/madurez.py`, `funciones/manchas.py` y `funciones/registro.py`,
+ausentes del remoto revisado el 6 de noviembre de 2026. Su ayuda se puede consultar
+con `python main_test2.py --help`. Las pruebas de CSV y atributos quedan pendientes
+hasta integrar los módulos de sus responsables.
 
 ## Interfaz gráfica (Tkinter)
 
@@ -60,10 +79,11 @@ Consulta opciones, incluidos los límites HSV, con `python main_test.py --help`.
 python -m interfaz.app
 ```
 
-Implementa el modelo de navegación de la sección 6 del documento de diseño: adjuntar
+La interfaz depende de los mismos tres módulos pendientes. Su funcionamiento completo
+queda pendiente de prueba. El código implementa el modelo de navegación de la sección 6 del documento de diseño: adjuntar
 imagen/video (Q), iniciar procesamiento (W), guardar (E), repetir (R), salir (Esc) y abrir
 el dashboard (D) con los gráficos de Madurez Visual, Calidad Visual y Calibre Aparente.
-Reutiliza el mismo pipeline que `main_test.py`, no duplica lógica de visión.
+Reutiliza las funciones de evaluación y anotación de `main_test2.py`.
 
 ## Estado de calibración
 
