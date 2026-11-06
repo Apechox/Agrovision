@@ -44,7 +44,7 @@ En ambos modos el resultado tiene el mismo formato — el resto del pipeline (`t
 
 ## 3. Evidencia 1: foto propia del repo (un tomate)
 
-Imagen: `dataset/fotos/summerlast.png` (la única foto que había en el repo al momento de esta prueba).
+Imagen: `dataset/fotos/summerlast.png`.
 
 | Original | Máscara cruda | Máscara limpia | Resultado anotado |
 |---|---|---|---|
