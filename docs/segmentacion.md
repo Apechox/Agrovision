@@ -54,7 +54,7 @@ Resultado: 1 tomate detectado, `bbox=(209,25,276,335)`, `centroide=(343,202)`, `
 
 ## 4. Evidencia 2: foto real con varios tomates (IDs por instancia)
 
-Imagen real (no sintética) de tomates en planta, del set de ejemplos público de Laboro Tomato (repositorio `laboroai/LaboroTomatoDatasets`, CC BY-NC-SA 4.0 — ver `modelo/README.md`).
+Imagen real de tomates en planta, del set de ejemplos público de Laboro Tomato (repositorio `laboroai/LaboroTomatoDatasets`, CC BY-NC-SA 4.0.
 
 | Original | Resultado con ID por tomate |
 |---|---|
