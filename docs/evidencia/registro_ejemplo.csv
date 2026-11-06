@@ -1,0 +1,2 @@
+﻿sesion,fuente,id,cuadro,instante,tipo,ancho_px,ancho_mm,calibre,estado_calibre,madurez,manchas,estado_registro,version_calibracion,incidencia
+S20261106_020451,summerlast.png,1,1,1793941491.374,"Tomate (asumido, sin modelo de tipo)",276,32.47,Pequeño,Estimado (calibración pendiente de validar),,,Confirmado,"px_per_mm=8.5; validada=no; hsv=[0, 70, 50]-[179, 255, 255]",madurez y manchas vacías: módulos A3.1/A3.2 no integrados

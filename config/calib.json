@@ -1,6 +1,7 @@
 {
-    "px_per_mm": 0.92,
-    "camera_height_mm": 400,
+    "px_per_mm": 8.5,
+    "camera_height_mm": 900,
+    "validated": false,
     "valid_zone_bbox": [50, 50, 540, 380],
     "notes": "px_per_mm provisional, calibrado con un tomate de ~60 mm. Falta validar con patrón plano y pie de metro (T2.5.1)"
 }
