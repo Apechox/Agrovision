@@ -1,0 +1,100 @@
+:root {
+  --fondo: #f4f6f3; --tarjeta: #ffffff; --texto: #1d2a1f; --suave: #5b6b5e; --borde: #dbe3da;
+  --prim: #2f7d32; --prim-texto: #ffffff; --aviso: #b25000; --aviso-fondo: #fff1e0;
+  --ok: #2f7d32; --info: #1f5fa8; --tabla-alt: #f8faf7; --visor: #1b1f1c;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --fondo: #121613; --tarjeta: #1a201b; --texto: #e6ece6; --suave: #9aa99c; --borde: #2c362d;
+    --prim: #4caf50; --prim-texto: #0e180f; --aviso: #ffb15c; --aviso-fondo: #3a2a14;
+    --ok: #6fcf73; --info: #6aa9ee; --tabla-alt: #1e251f; --visor: #0c0f0d;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--fondo); color: var(--texto);
+  font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+h1 { font-size: 20px; margin: 0; } h2 { font-size: 15px; margin: 0 0 10px; }
+p { margin: 0; }
+
+.barra { display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  flex-wrap: wrap; padding: 12px 20px; background: var(--tarjeta); border-bottom: 1px solid var(--borde); }
+.marca { display: flex; align-items: center; gap: 12px; }
+.marca p { color: var(--suave); font-size: 13px; }
+.logo { font-size: 30px; }
+.barra-estado { display: flex; align-items: center; gap: 14px; }
+.meta { color: var(--suave); font-size: 13px; }
+
+.pill { padding: 4px 12px; border-radius: 999px; font-weight: 600; font-size: 13px; border: 1px solid currentColor; }
+.pill-espera { color: var(--suave); } .pill-listo { color: var(--info); }
+.pill-proc { color: var(--ok); } .pill-res { color: var(--prim); } .pill-aviso { color: var(--aviso); }
+
+.rejilla { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 16px;
+  padding: 16px 20px; max-width: 1500px; margin: 0 auto; }
+@media (max-width: 1000px) { .rejilla { grid-template-columns: 1fr; } }
+.col-izq, .col-der { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+
+.tarjeta { background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 12px; padding: 14px; }
+.chico { color: var(--suave); font-size: 13px; margin-top: 8px; }
+.explica { color: var(--suave); font-size: 14px; margin-top: 10px; }
+
+.tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 10px; }
+.tab { background: transparent; border: 1px solid var(--borde); color: var(--suave); padding: 6px 12px;
+  border-radius: 8px; cursor: pointer; font: inherit; font-size: 13px; }
+.tab.activa { background: var(--prim); border-color: var(--prim); color: var(--prim-texto); font-weight: 600; }
+
+.visor { position: relative; background: var(--visor); border-radius: 8px; overflow: hidden;
+  display: grid; place-items: center; min-height: 260px; }
+.visor img { width: 100%; max-height: 62vh; object-fit: contain; display: block; }
+.banda-aviso { position: absolute; left: 0; right: 0; top: 0; padding: 8px 12px; font-weight: 700;
+  background: var(--aviso-fondo); color: var(--aviso); border-bottom: 2px solid var(--aviso); }
+
+.etapas { list-style: none; margin: 0; padding: 0; display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 8px; }
+.etapa { border: 1px solid var(--borde); border-radius: 10px; padding: 8px; cursor: pointer;
+  background: var(--tarjeta); text-align: left; font: inherit; color: inherit; }
+.etapa:hover, .etapa:focus-visible, .etapa.sel { border-color: var(--prim); outline: none; }
+.etapa b { display: block; font-size: 13px; }
+.etapa small { color: var(--suave); font-size: 12px; }
+.chip { display: inline-block; margin-top: 4px; padding: 1px 8px; border-radius: 999px; font-size: 11px;
+  font-weight: 700; border: 1px solid currentColor; }
+.chip.ok { color: var(--ok); } .chip.pend { color: var(--aviso); }
+
+.zona { border: 2px dashed var(--borde); border-radius: 10px; padding: 16px; text-align: center;
+  display: grid; gap: 4px; color: var(--suave); cursor: pointer; }
+.zona.sobre, .zona:focus-visible { border-color: var(--prim); outline: none; color: var(--texto); }
+.fila { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
+.camara { display: flex; align-items: center; gap: 6px; color: var(--suave); font-size: 13px; }
+.camara input { width: 56px; padding: 6px; border-radius: 6px; border: 1px solid var(--borde);
+  background: var(--tarjeta); color: var(--texto); }
+.botones button { flex: 1 1 110px; }
+
+button.prim, button.sec { font: inherit; font-size: 14px; padding: 8px 12px; border-radius: 8px;
+  cursor: pointer; border: 1px solid var(--borde); }
+button.prim { background: var(--prim); border-color: var(--prim); color: var(--prim-texto); font-weight: 600; }
+button.sec { background: var(--tarjeta); color: var(--texto); }
+button:disabled { opacity: .45; cursor: not-allowed; }
+button:focus-visible, .tab:focus-visible { outline: 2px solid var(--info); outline-offset: 2px; }
+kbd { font: 600 11px ui-monospace, Consolas, monospace; border: 1px solid currentColor;
+  border-radius: 4px; padding: 0 4px; opacity: .8; }
+
+.tabla-caja { overflow: auto; max-height: 300px; border: 1px solid var(--borde); border-radius: 8px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { padding: 6px 8px; text-align: left; white-space: nowrap; }
+th { position: sticky; top: 0; background: var(--tarjeta); border-bottom: 1px solid var(--borde); }
+tbody tr:nth-child(even) { background: var(--tabla-alt); }
+tr.aviso td { color: var(--aviso); font-weight: 600; }
+
+.incid { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: 300px; overflow: auto; }
+.incid li { border-left: 4px solid var(--aviso); background: var(--aviso-fondo); padding: 6px 10px;
+  border-radius: 4px; font-size: 13px; }
+.incid .vacio { border-color: var(--borde); background: transparent; color: var(--suave); }
+
+.graficas { display: grid; gap: 14px; margin-top: 10px; }
+.grafica h3 { font-size: 13px; margin: 0 0 6px; }
+.barra-fila { display: grid; grid-template-columns: 110px 1fr 40px; gap: 8px; align-items: center; font-size: 13px; }
+.barra-pista { background: var(--tabla-alt); border: 1px solid var(--borde); border-radius: 6px; height: 14px; overflow: hidden; }
+.barra-valor { background: var(--prim); height: 100%; }
+
+.toast { position: fixed; right: 16px; bottom: 16px; max-width: 360px; padding: 10px 14px;
+  border-radius: 8px; background: var(--texto); color: var(--fondo); font-size: 14px; z-index: 5; }
+.toast.error { background: var(--aviso); color: #fff; }

@@ -15,6 +15,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 import cv2
+import numpy as np
 
 from funciones.calib import Calibrator
 from funciones.seg import ClassicSegmenter
@@ -77,6 +78,14 @@ class ResultadoCuadro:
     anotado: object
     observaciones: list = field(default_factory=list)
     ids_activos: set = field(default_factory=set)
+    mascara_hsv: object = None      # umbral HSV crudo (etapa 1)
+    mascara_limpia: object = None   # tras apertura y cierre (etapa 2)
+
+
+def leer_imagen(ruta):
+    """cv2.imread falla con rutas con tildes en Windows; imdecode no."""
+    datos = np.fromfile(str(ruta), dtype=np.uint8)
+    return cv2.imdecode(datos, cv2.IMREAD_COLOR) if datos.size else None
 
 
 class PipelineInspeccion:
@@ -101,7 +110,7 @@ class PipelineInspeccion:
         return "Calibrado" if self.calibracion_validada else "Estimado (calibración pendiente de validar)"
 
     def procesar(self, frame):
-        _, _, instancias = self.segmentador.process_with_masks(frame)
+        mascara_hsv, mascara_limpia, instancias = self.segmentador.process_with_masks(frame)
         seguidas = self.seguidor.update(instancias)
         observaciones = [self._observar(o) for o in seguidas]
         for inst in instancias:
@@ -111,7 +120,7 @@ class PipelineInspeccion:
                     contour=inst["contour"], valida=False, en_zona=False,
                     ancho_px=inst["bbox"][2], causa="Cortado por el borde de la imagen"))
         return ResultadoCuadro(self._anotar(frame, observaciones), observaciones,
-                               set(self.seguidor.objects))
+                               set(self.seguidor.objects), mascara_hsv, mascara_limpia)
 
     def _observar(self, obj):
         ancho_px = obj["bbox"][2]

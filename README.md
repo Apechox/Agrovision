@@ -71,6 +71,18 @@ vacías, y `interfaz/sesion.py` es un registro provisional hasta integrar M6.
 
 Pestañas: observaciones actuales, registro de sesión (una fila por ID) e incidencias.
 
+## Interfaz web local
+
+```bash
+python -m web.server
+```
+
+Abre `http://127.0.0.1:8000`. Misma lógica que la interfaz Tkinter, con vistas por etapa
+(detecciones, máscara HSV, máscara limpia) y una explicación del pipeline. No requiere
+instalar nada más (solo librería estándar, OpenCV y NumPy); escucha únicamente en `127.0.0.1`.
+
+Documentación: `docs/documentacion_trabajo.md` y `docs/cambios_vs_diseno.md`.
+
 ## Estado de calibración
 
 `config/calib.json` trae un valor de `px_per_mm` de referencia. Antes de confiar en los

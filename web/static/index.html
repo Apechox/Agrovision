@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AgroVision</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="barra">
+  <div class="marca"><span class="logo" aria-hidden="true">🍅</span>
+    <div><h1>AgroVision</h1><p>Inspección visual de tomates · TEL328</p></div></div>
+  <div class="barra-estado">
+    <span id="pill" class="pill pill-espera">● Esperando fuente</span>
+    <span id="meta" class="meta"></span>
+  </div>
+</header>
+
+<main class="rejilla">
+  <!-- ============ Columna izquierda: video + pipeline ============ -->
+  <section class="col-izq">
+    <div class="tarjeta">
+      <div class="tabs" role="tablist" aria-label="Vista del procesamiento">
+        <button class="tab activa" data-vista="detecciones" role="tab">1 · Detecciones</button>
+        <button class="tab" data-vista="mascara" role="tab">2a · Máscara HSV</button>
+        <button class="tab" data-vista="limpia" role="tab">2b · Máscara limpia</button>
+      </div>
+      <div class="visor">
+        <img id="video" alt="Video en inspección">
+        <div id="aviso-interrupcion" class="banda-aviso" hidden>
+          ⚠ ÚLTIMOS RESULTADOS — anteriores a la interrupción de la fuente
+        </div>
+      </div>
+      <p id="explica" class="explica"></p>
+    </div>
+
+    <div class="tarjeta">
+      <h2>Pipeline: ¿qué pasa con cada cuadro?</h2>
+      <ol class="etapas" id="etapas"></ol>
+      <p id="etapa-detalle" class="explica">Pasa el mouse o haz clic en una etapa para ver qué hace.</p>
+    </div>
+  </section>
+
+  <!-- ============ Columna derecha: control + resultados ============ -->
+  <section class="col-der">
+    <div class="tarjeta">
+      <h2>Fuente</h2>
+      <div id="zona" class="zona" tabindex="0">
+        <strong>Arrastra una imagen o video aquí</strong>
+        <span>o presiona <kbd>Q</kbd> para elegir un archivo</span>
+        <input id="archivo" type="file" accept=".png,.jpg,.jpeg,.bmp,.mp4,.avi,.mov,.mkv" hidden>
+      </div>
+      <div class="fila">
+        <button id="btn-muestra" class="sec">Usar foto de ejemplo</button>
+        <label class="camara">Cámara n°
+          <input id="camara-n" type="number" min="0" max="9" value="0"></label>
+        <button id="btn-camara" class="sec">Usar cámara</button>
+      </div>
+      <p id="fuente-actual" class="chico">Sin fuente seleccionada</p>
+    </div>
+
+    <div class="tarjeta">
+      <div class="fila botones">
+        <button id="btn-iniciar" class="prim"><kbd>W</kbd> Iniciar</button>
+        <button id="btn-detener" class="sec"><kbd>S</kbd> Detener</button>
+        <button id="btn-guardar" class="sec"><kbd>E</kbd> Guardar</button>
+        <button id="btn-repetir" class="sec"><kbd>R</kbd> Repetir</button>
+      </div>
+    </div>
+
+    <div class="tarjeta">
+      <div class="tabs" role="tablist" aria-label="Resultados">
+        <button class="tab activa" data-panel="p-actual" role="tab">Actuales</button>
+        <button class="tab" data-panel="p-registro" role="tab">Registro</button>
+        <button class="tab" data-panel="p-incid" role="tab" id="tab-incid">Incidencias</button>
+        <button class="tab" data-panel="p-dash" role="tab"><kbd>D</kbd> Dashboard</button>
+      </div>
+
+      <div id="p-actual" class="panel">
+        <p id="titulo-actual" class="chico">Sin observaciones</p>
+        <div class="tabla-caja"><table>
+          <thead><tr><th>ID</th><th>Ancho px</th><th>Ancho mm</th><th>Calibre</th>
+            <th>Madurez</th><th>Manchas</th><th>Validez</th></tr></thead>
+          <tbody id="t-actual"></tbody></table></div>
+        <p id="estado-calibre" class="chico"></p>
+      </div>
+
+      <div id="p-registro" class="panel" hidden>
+        <p id="titulo-registro" class="chico">Una fila por tomate (por ID), no por cuadro.</p>
+        <div class="tabla-caja"><table>
+          <thead><tr><th>ID</th><th>Cuadro</th><th>Ancho mm</th><th>Calibre</th><th>Estado del registro</th></tr></thead>
+          <tbody id="t-registro"></tbody></table></div>
+      </div>
+
+      <div id="p-incid" class="panel" hidden>
+        <ul id="lista-incid" class="incid"></ul>
+      </div>
+
+      <div id="p-dash" class="panel" hidden>
+        <p id="titulo-dash" class="chico"></p>
+        <div id="graficas" class="graficas"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+<script src="/app.js"></script>
+</body>
+</html>

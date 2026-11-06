@@ -1,0 +1,198 @@
+// Frontend de AgroVision: HTML + JS puro. Habla con web/server.py por fetch (JSON) y MJPEG.
+const $ = (s) => document.querySelector(s);
+const esc = (v) => String(v ?? '').replace(/[&<>"']/g,
+  (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+// ---------- contenido didáctico ----------
+const EXPLICA_VISTA = {
+  detecciones: 'Resultado final del cuadro: contorno de cada tomate, su ID de seguimiento y el ancho en mm. ' +
+    'Verde = válido y medido dentro de la zona azul; naranja = cortado por el borde o fuera de la zona.',
+  mascara: 'Etapa 2a (seg.py): se convierte la imagen a HSV y se deja en blanco lo que cae dentro del rango de color ' +
+    'del tomate (cv2.inRange). Es una máscara cruda: puede traer ruido y huecos.',
+  limpia: 'Etapa 2b (seg.py): apertura morfológica (borra puntitos blancos) y cierre (rellena huecos, como reflejos). ' +
+    'De esta máscara salen los contornos.',
+};
+const ETAPAS = [
+  { n: 1, t: 'Adquisición', a: 'acq.py', ok: true, vista: 'detecciones',
+    d: 'Lee la cámara o el archivo cuadro a cuadro, con índice y marca de tiempo. Si el video termina o la señal se pierde, ' +
+       'suspende las observaciones en vez de seguir midiendo (RF1, RF11).' },
+  { n: 2, t: 'Segmentación', a: 'seg.py', ok: true, vista: 'mascara',
+    d: 'Convierte a HSV, umbraliza por color, limpia con morfología y extrae un contorno por tomate. ' +
+       'Marca como inválido el que toca el borde de la imagen (RF2).' },
+  { n: 3, t: 'Seguimiento', a: 'track.py', ok: true, vista: 'detecciones',
+    d: 'Asocia cada tomate con el del cuadro anterior por distancia entre centroides y le mantiene el mismo ID (RF9).' },
+  { n: 4, t: 'Calibración', a: 'calib.py', ok: true, vista: 'detecciones',
+    d: 'Convierte el ancho en píxeles a mm (ancho_px / px_por_mm), solo dentro de la zona de medición. ' +
+       'La escala todavía NO está validada con pie de metro (RF4).' },
+  { n: 5, t: 'Madurez', a: 'madurez.py', ok: false, vista: 'detecciones',
+    d: 'Pendiente: el módulo A3.1 no está integrado en el repositorio (RF3).' },
+  { n: 6, t: 'Manchas', a: 'manchas.py', ok: false, vista: 'detecciones',
+    d: 'Pendiente: el módulo A3.2 no está integrado en el repositorio (RF5).' },
+  { n: 7, t: 'Registro', a: 'sesion.py', ok: true, vista: 'detecciones',
+    d: 'Guarda una sola fila por ID (la observación más cercana al centro de la zona) y exporta CSV. ' +
+       'Es provisional hasta integrar el módulo M6 (RF7).' },
+];
+const ESTADOS = {
+  ESPERANDO: ['Esperando fuente', 'pill-espera'], LISTO: ['Lista para iniciar', 'pill-listo'],
+  PROCESANDO: ['Procesando', 'pill-proc'], RESULTADO: ['Resultado', 'pill-res'],
+};
+
+// ---------- utilidades ----------
+let toastTimer;
+function aviso(texto, ok = true) {
+  const t = $('#toast');
+  t.textContent = texto; t.className = 'toast' + (ok ? '' : ' error'); t.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => (t.hidden = true), 4000);
+}
+async function post(url, opciones = {}) {
+  try {
+    const r = await fetch(url, { method: 'POST', ...opciones });
+    const j = await r.json();
+    aviso(j.mensaje, j.ok);
+    return j;
+  } catch (e) {
+    aviso('No se pudo contactar al servidor local.', false);
+    return { ok: false };
+  }
+}
+const mm = (v) => (v === null || v === undefined || v === '' ? '—' : Number(v).toFixed(1));
+
+// ---------- vista de video ----------
+let vista = 'detecciones';
+function elegirVista(v) {
+  vista = v;
+  document.querySelectorAll('[data-vista]').forEach((b) => b.classList.toggle('activa', b.dataset.vista === v));
+  $('#video').src = `/video?vista=${v}&t=${Date.now()}`;
+  $('#explica').textContent = EXPLICA_VISTA[v];
+}
+document.querySelectorAll('[data-vista]').forEach((b) => b.addEventListener('click', () => elegirVista(b.dataset.vista)));
+
+// ---------- etapas del pipeline ----------
+$('#etapas').innerHTML = ETAPAS.map((e, i) =>
+  `<li><button class="etapa" data-i="${i}"><b>${e.n}. ${esc(e.t)}</b><small>${esc(e.a)}</small><br>` +
+  `<span class="chip ${e.ok ? 'ok' : 'pend'}">${e.ok ? 'Integrado' : 'Pendiente'}</span></button></li>`).join('');
+document.querySelectorAll('.etapa').forEach((b) => {
+  const mostrar = () => {
+    const e = ETAPAS[b.dataset.i];
+    document.querySelectorAll('.etapa').forEach((x) => x.classList.toggle('sel', x === b));
+    $('#etapa-detalle').textContent = `${e.n}. ${e.t} (${e.a}): ${e.d}`;
+  };
+  b.addEventListener('mouseenter', mostrar);
+  b.addEventListener('focus', mostrar);
+  b.addEventListener('click', () => { mostrar(); if (ETAPAS[b.dataset.i].n === 2) elegirVista('mascara'); });
+});
+
+// ---------- paneles de resultados ----------
+let panel = 'p-actual';
+function elegirPanel(id) {
+  panel = id;
+  document.querySelectorAll('[data-panel]').forEach((b) => b.classList.toggle('activa', b.dataset.panel === id));
+  document.querySelectorAll('.panel').forEach((p) => (p.hidden = p.id !== id));
+  if (id === 'p-dash') refrescarDashboard();
+}
+document.querySelectorAll('[data-panel]').forEach((b) => b.addEventListener('click', () => elegirPanel(b.dataset.panel)));
+
+// ---------- render del estado ----------
+let ultimo = '';
+function render(s) {
+  const firma = JSON.stringify(s);
+  if (firma === ultimo) return;
+  ultimo = firma;
+
+  const [txt, clase] = s.interrumpida ? ['Fuente interrumpida', 'pill-aviso'] : (ESTADOS[s.estado] || ESTADOS.ESPERANDO);
+  const pill = $('#pill'); pill.textContent = '● ' + txt; pill.className = 'pill ' + clase;
+  $('#meta').textContent = [s.mensaje, s.ocupado && s.fps ? `${s.fps} FPS de proceso` : '', s.cuadros ? `cuadros: ${s.cuadros}` : '']
+    .filter(Boolean).join(' · ');
+  $('#fuente-actual').textContent = s.fuente ? `Fuente: ${s.fuente}` : 'Sin fuente seleccionada';
+  $('#aviso-interrupcion').hidden = !s.interrumpida;
+
+  $('#btn-iniciar').disabled = !s.fuente || s.ocupado;
+  $('#btn-detener').disabled = !s.ocupado;
+  $('#btn-guardar').disabled = !s.puede_guardar;
+
+  $('#titulo-actual').textContent = s.interrumpida
+    ? '⚠ Últimos resultados — anteriores a la interrupción de la fuente'
+    : (s.observaciones.length ? `Observaciones actuales: ${s.observaciones.length} objeto(s) en el cuadro` : 'Sin observaciones');
+  $('#t-actual').innerHTML = s.observaciones.map((o) =>
+    `<tr class="${o.valida ? '' : 'aviso'}"><td>${o.id ?? '—'}</td><td>${o.ancho_px}</td><td>${mm(o.ancho_mm)}</td>` +
+    `<td>${esc(o.calibre)}</td><td>${esc(o.madurez)}</td><td>${esc(o.manchas)}</td><td>${esc(o.validez)}</td></tr>`).join('');
+  const conMedida = s.observaciones.find((o) => o.ancho_mm !== null);
+  $('#estado-calibre').textContent = conMedida ? `Calibre: ${conMedida.estado_calibre}` : (s.calibracion ? `Calibración: ${s.calibracion}` : '');
+
+  const prov = s.registro.filter((r) => r.estado_registro === 'Provisional').length;
+  $('#titulo-registro').textContent = `${s.registro.length} registro(s) — ${prov} provisional(es). Una fila por tomate (por ID), no por cuadro.`;
+  $('#t-registro').innerHTML = s.registro.map((r) =>
+    `<tr><td>${r.id}</td><td>${r.cuadro}</td><td>${mm(r.ancho_mm)}</td><td>${esc(r.calibre)}</td><td>${esc(r.estado_registro)}</td></tr>`).join('');
+
+  $('#tab-incid').textContent = `Incidencias${s.incidencias.length ? ` (${s.incidencias.length})` : ''}`;
+  $('#lista-incid').innerHTML = s.incidencias.length
+    ? s.incidencias.map((i) => `<li><b>${esc(i.hora)} · ${esc(i.origen)}</b> — ${esc(i.causa)}</li>`).join('')
+    : '<li class="vacio">Sin incidencias.</li>';
+  if (panel === 'p-dash') refrescarDashboard();
+}
+async function refrescar() {
+  try { render(await (await fetch('/api/estado', { cache: 'no-store' })).json()); }
+  catch (e) { $('#pill').textContent = '● Sin conexión con el servidor'; $('#pill').className = 'pill pill-aviso'; }
+}
+
+// ---------- dashboard ----------
+async function refrescarDashboard() {
+  const d = await (await fetch('/api/dashboard', { cache: 'no-store' })).json();
+  $('#titulo-dash').textContent = `Registros definitivos: ${d.definitivos} (provisionales excluidos: ${d.provisionales})`;
+  const nota = { madurez: 'Sin datos: módulo A3.1 pendiente', manchas: 'Sin datos: módulo A3.2 pendiente', calibre: 'Sin datos' };
+  const grafica = (titulo, clave) => {
+    const datos = d[clave]; const total = Object.values(datos).reduce((a, b) => a + b, 0);
+    const filas = total ? Object.entries(datos).map(([k, v]) =>
+      `<div class="barra-fila"><span>${esc(k)}</span><div class="barra-pista"><div class="barra-valor" style="width:${(v / total) * 100}%"></div></div>` +
+      `<span>${v} (${Math.round((v / total) * 100)}%)</span></div>`).join('') : `<p class="chico">${nota[clave]}</p>`;
+    return `<div class="grafica"><h3>${titulo}</h3>${filas}</div>`;
+  };
+  $('#graficas').innerHTML = grafica('Madurez Visual', 'madurez') + grafica('Calidad Visual', 'manchas') + grafica('Calibre Aparente', 'calibre');
+}
+
+// ---------- acciones ----------
+async function subir(archivo) {
+  aviso(`Subiendo ${archivo.name}…`);
+  await post(`/api/fuente/archivo?nombre=${encodeURIComponent(archivo.name)}`,
+    { body: archivo, headers: { 'Content-Type': 'application/octet-stream' } });
+  refrescar();
+}
+const accion = (url) => async () => { await post(url); refrescar(); };
+const iniciar = accion('/api/iniciar'), detener = accion('/api/detener'), repetir = async () => {
+  if (ultimo && JSON.parse(ultimo).puede_guardar && !confirm('Hay registros que se perderán. ¿Continuar?')) return;
+  await post('/api/repetir'); refrescar();
+};
+function guardar() {
+  if ($('#btn-guardar').disabled) return;
+  if (!confirm('¿Guardar el CSV de registros y la vista anotada?')) return;
+  for (const [url, nombre] of [['/api/registro.csv', 'registro.csv'], ['/api/vista.png', 'vista_anotada.png']]) {
+    const a = document.createElement('a'); a.href = url; a.download = nombre; document.body.append(a); a.click(); a.remove();
+  }
+}
+$('#btn-iniciar').addEventListener('click', iniciar);
+$('#btn-detener').addEventListener('click', detener);
+$('#btn-guardar').addEventListener('click', guardar);
+$('#btn-repetir').addEventListener('click', repetir);
+$('#btn-muestra').addEventListener('click', accion('/api/fuente/muestra'));
+$('#btn-camara').addEventListener('click', async () => {
+  await post(`/api/fuente/camara?n=${encodeURIComponent($('#camara-n').value || 0)}`); refrescar();
+});
+
+const zona = $('#zona'), input = $('#archivo');
+zona.addEventListener('click', () => input.click());
+zona.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') input.click(); });
+input.addEventListener('change', () => { if (input.files[0]) subir(input.files[0]); input.value = ''; });
+['dragenter', 'dragover'].forEach((ev) => zona.addEventListener(ev, (e) => { e.preventDefault(); zona.classList.add('sobre'); }));
+['dragleave', 'drop'].forEach((ev) => zona.addEventListener(ev, (e) => { e.preventDefault(); zona.classList.remove('sobre'); }));
+zona.addEventListener('drop', (e) => { if (e.dataTransfer.files[0]) subir(e.dataTransfer.files[0]); });
+
+document.addEventListener('keydown', (e) => {
+  if (e.ctrlKey || e.metaKey || e.altKey || ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+  const k = e.key.toLowerCase();
+  if (k === 'q') input.click(); else if (k === 'w') iniciar(); else if (k === 's' || k === 'escape') detener();
+  else if (k === 'e') guardar(); else if (k === 'r') repetir(); else if (k === 'd') elegirPanel('p-dash');
+});
+
+elegirVista('detecciones');
+refrescar();
+setInterval(refrescar, 300);

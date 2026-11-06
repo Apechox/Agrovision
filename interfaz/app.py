@@ -25,12 +25,11 @@ from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 
 import cv2
-import numpy as np
 from PIL import Image, ImageTk
 
 from funciones.acq import SourceState, VideoSource
 from interfaz.dashboard import mostrar_dashboard
-from interfaz.pipeline import PipelineInspeccion
+from interfaz.pipeline import PipelineInspeccion, leer_imagen
 from interfaz.sesion import SesionRegistro
 
 EXT_IMAGEN = {".png", ".jpg", ".jpeg", ".bmp"}
@@ -47,12 +46,6 @@ COLUMNAS_ACTUAL = [("id", "ID", 50), ("ancho_px", "Ancho (px)", 80), ("ancho_mm"
 COLUMNAS_REGISTRO = [("id", "ID", 50), ("cuadro", "Cuadro", 60), ("ancho_mm", "Ancho (mm)", 85),
                      ("calibre", "Calibre", 80), ("estado_registro", "Estado del registro", 150)]
 COLUMNAS_INCIDENCIAS = [("hora", "Hora", 70), ("origen", "Origen", 130), ("causa", "Causa", 420)]
-
-
-def leer_imagen(ruta):
-    """cv2.imread falla con rutas con tildes en Windows; imdecode no."""
-    datos = np.fromfile(str(ruta), dtype=np.uint8)
-    return cv2.imdecode(datos, cv2.IMREAD_COLOR) if datos.size else None
 
 
 class AgroVisionApp(tk.Tk):
