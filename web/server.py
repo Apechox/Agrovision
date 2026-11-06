@@ -9,7 +9,7 @@ Rutas:
     GET  /video?vista=...        video MJPEG: detecciones | mascara | limpia
     GET  /api/estado             estado, observaciones, registro e incidencias (JSON)
     GET  /api/dashboard          conteos para las gráficas (JSON)
-    GET  /api/registro.csv       CSV de toda la cola; ?formato=excel (por defecto) | datos
+    GET  /api/registro.csv       CSV de toda la cola; ?formato=operador (por defecto) | tecnico
     (cada POST /api/fuente/archivo agrega un archivo a la cola)
     GET  /api/vista.png          descarga la última vista anotada
     POST /api/fuente/archivo     cuerpo = archivo crudo; ?nombre=video.mp4
@@ -18,6 +18,7 @@ Rutas:
     POST /api/hsv                cuerpo JSON {"min":[h,s,v],"max":[h,s,v]}
     POST /api/roi                cuerpo JSON {"x":..,"y":..,"w":..,"h":..} (zona de medición, px)
                                  o {"completa": true} para volver al cuadro completo
+    POST /api/calibracion        cuerpo JSON {"distancia_cm": 90}: guarda la distancia cámara-superficie en config/calib.json
     POST /api/cola/quitar?i=     quita el archivo i de la cola | /api/cola/vaciar vacía la cola
     POST /api/cola/mover?de=&a=  cambia el orden de análisis (solo archivos en espera)
     POST /api/iniciar | /api/pausa | /api/detener | /api/repetir
@@ -95,7 +96,7 @@ class Handler(BaseHTTPRequestHandler):
             vista = parse_qs(url.query).get("vista", ["detecciones"])[0]
             return self._video(vista)
         if url.path == "/api/registro.csv":
-            return self._csv(parse_qs(url.query).get("formato", ["excel"])[0])
+            return self._csv(parse_qs(url.query).get("formato", ["operador"])[0])
         if url.path == "/api/vista.png":
             return self._png()
         return self._estatico(url.path)
@@ -138,7 +139,7 @@ class Handler(BaseHTTPRequestHandler):
         except ERRORES_CLIENTE:
             return
 
-    def _csv(self, formato="excel"):
+    def _csv(self, formato="operador"):
         ok, resultado = self.motor.exportar_csv(formato)
         if not ok:
             return self._json({"ok": False, "mensaje": resultado}, 400)
@@ -202,6 +203,13 @@ class Handler(BaseHTTPRequestHandler):
                 return self._accion(m.fijar_roi(d["x"], d["y"], d["w"], d["h"]))
             except (ValueError, KeyError, TypeError, AttributeError):
                 return self._accion((False, "Cuerpo inválido: se espera {x, y, w, h} o {completa: true}"))
+        if url.path == "/api/calibracion":
+            try:
+                largo = min(int(self.headers.get("Content-Length", "0")), 4096)
+                d = json.loads(self.rfile.read(largo) or b"{}")
+                return self._accion(m.fijar_distancia(d["distancia_cm"]))
+            except (ValueError, KeyError, TypeError):
+                return self._accion((False, "Cuerpo inválido: se espera {distancia_cm}"))
         if url.path == "/api/cola/quitar":
             try:
                 return self._accion(m.quitar(int(consulta.get("i", [""])[0])))

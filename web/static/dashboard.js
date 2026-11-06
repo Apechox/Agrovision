@@ -10,11 +10,13 @@
   const clave = (s) => quitarAcentos(s).toLowerCase().replace(/[^a-z0-9]/g, '');
   // encabezado (en cualquiera de los dos formatos de CSV) -> campo interno
   const ALIAS = {
-    fuente: 'fuente', id: 'id', tipo: 'tipo', anchomm: 'ancho_mm', calibre: 'calibre', madurez: 'madurez',
+    fuente: 'fuente', id: 'id', tipo: 'tipo', anchomm: 'ancho_mm', pesog: 'peso_g', calibre: 'calibre', madurez: 'madurez',
     manchas: 'manchas', estadodelregistro: 'estado', estadoregistro: 'estado',
     estadodelcalibre: 'estado_calibre', estadocalibre: 'estado_calibre', sesion: 'sesion',
   };
-  const REQUERIDAS = ['ancho_mm', 'calibre', 'estado'];
+  // El CSV del operador no trae el estado del registro (solo exporta registros definitivos);
+  // si la columna falta, todas las filas se consideran definitivas.
+  const REQUERIDAS = ['ancho_mm', 'calibre'];
   const PROVISIONAL = 'Provisional';
 
   function separador(texto) {
@@ -47,7 +49,7 @@
   function normalizar(o) {
     return {
       fuente: String(o.fuente || '').trim() || '(sin nombre)', id: o.id ?? '', tipo: String(o.tipo || '').trim(),
-      ancho_mm: numero(o.ancho_mm), calibre: String(o.calibre || '').trim(), madurez: String(o.madurez || '').trim(),
+      ancho_mm: numero(o.ancho_mm), peso_g: numero(o.peso_g), calibre: String(o.calibre || '').trim(), madurez: String(o.madurez || '').trim(),
       manchas: String(o.manchas || '').trim(), estado: String(o.estado || '').trim(),
       estado_calibre: String(o.estado_calibre || '').trim(),
     };
@@ -75,7 +77,10 @@
   function estadistica(valores) {
     const n = valores.length;
     if (!n) return { n: 0 };
-    return { n, media: valores.reduce((a, b) => a + b, 0) / n, min: Math.min(...valores), max: Math.max(...valores) };
+    const media = valores.reduce((a, b) => a + b, 0) / n;
+    // varianza muestral (n - 1); con un solo dato no hay dispersión que medir y queda en 0
+    const varianza = n > 1 ? valores.reduce((a, b) => a + (b - media) ** 2, 0) / (n - 1) : 0;
+    return { n, media, min: Math.min(...valores), max: Math.max(...valores), varianza };
   }
 
   function contar(filas, campo) {
@@ -90,7 +95,7 @@
     return Object.entries(grupos).map(([fuente, fs]) => {
       const c = contar(fs, 'calibre'), pred = Object.entries(c).sort((a, b) => b[1] - a[1])[0];
       return { fuente, n: fs.length, ancho: estadistica(fs.map((f) => f.ancho_mm).filter((v) => v !== null)),
-        calibre: pred ? pred[0] : '—' };
+        peso: estadistica(fs.map((f) => f.peso_g).filter((v) => v !== null)), calibre: pred ? pred[0] : '—' };
     });
   }
 
@@ -99,9 +104,10 @@
       (!filtros.fruto || base(f.tipo) === filtros.fruto));
     const definitivas = visibles.filter((f) => f.estado !== PROVISIONAL);  // M6: los provisionales no entran
     const anchos = definitivas.map((f) => f.ancho_mm).filter((v) => v !== null);
+    const pesos = definitivas.map((f) => f.peso_g).filter((v) => v !== null);
     return {
       visibles, definitivas, provisionales: visibles.length - definitivas.length,
-      ancho: estadistica(anchos),
+      ancho: estadistica(anchos), peso: estadistica(pesos),
       calibre: contar(definitivas, 'calibre'), madurez: contar(definitivas, 'madurez'),
       manchas: contar(definitivas, 'manchas'),
       porArchivo: resumenPorArchivo(definitivas),
@@ -113,7 +119,7 @@
   const esc = (v) => String(v ?? '').replace(/[&<>"']/g,
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const f1 = (v) => (v === null || v === undefined ? '—' : Number(v).toFixed(1).replace('.', ','));
-  const ORDEN_CALIBRE = ['Pequeño', 'Mediano', 'Grande'];
+  const ORDEN_CALIBRE = ['Grande', 'Mediano', 'Pequeño'];  // el más grande arriba y con el tono más intenso
 
   // Donut como en la sección 6.2.2 del documento. Paleta azul ordinal validada (claro y oscuro):
   // la categoría que el documento lista primero toma el tono más marcado. Los porcentajes van
@@ -163,20 +169,28 @@
   }
 
   // Indicadores a la izquierda, bajo los donuts: totales arriba y el rango del ancho abajo.
+  // Cada magnitud va en un bloque con su nombre y su unidad entre corchetes; dentro, bloques chicos con el resumen.
   function dibujarKpis(r) {
-    const a = r.ancho, archivos = new Set(r.definitivas.map((f) => f.fuente)).size;
+    const a = r.ancho, p = r.peso, archivos = new Set(r.definitivas.map((f) => f.fuente)).size;
     const k = (t, v) => `<div class="kpi"><b>${v}</b><span>${esc(t)}</span></div>`;
-    return `<div class="kpi-fila f2">${k('Tomates totales', r.definitivas.length)}${k('Archivos', archivos)}</div>` +
-      `<div class="kpi-fila f3">${k('Ancho mín. (mm)', a.n ? f1(a.min) : '—')}${k('Ancho medio (mm)', a.n ? f1(a.media) : '—')}` +
-      `${k('Ancho máx. (mm)', a.n ? f1(a.max) : '—')}</div>`;
+    const v = (e, campo) => (e.n ? f1(e[campo]) : '—');
+    const bloque = (titulo, columnas, hijos, nota) =>
+      `<section class="kpi-bloque"><h3>${esc(titulo)}</h3><div class="kpi-fila c${columnas}">${hijos}</div>` +
+      `${nota ? `<p class="chico">${esc(nota)}</p>` : ''}</section>`;
+    const sinPeso = p.n ? '' : 'Sin datos de peso: la estimación (A3.4) aún no está integrada.';
+    return `<div class="kpi-fila c2">${k('Tomates totales', r.definitivas.length)}${k('Archivos', archivos)}</div>` +
+      bloque('Ancho [mm]', 3, k('Mín.', v(a, 'min')) + k('Medio', v(a, 'media')) + k('Máx.', v(a, 'max'))) +
+      bloque('Peso [g]', 3, k('Mín.', v(p, 'min')) + k('Medio', v(p, 'media')) + k('Máx.', v(p, 'max')), sinPeso) +
+      bloque('Varianza [mm², g²]', 2, k('Ancho', v(a, 'varianza')) + k('Peso', v(p, 'varianza')),
+        'Varianza muestral (n − 1).');
   }
 
   function dibujarTabla(filas) {
     if (!filas.length) return '';
     return '<div class="grafica"><h3>Resumen por archivo</h3><div class="tabla-caja"><table><thead><tr>' +
-      '<th>Archivo</th><th>Tomates</th><th>Ancho medio (mm)</th><th>Calibre predominante</th></tr></thead><tbody>' +
+      '<th>Archivo</th><th>Tomates</th><th>Ancho medio [mm]</th><th>Peso medio [g]</th><th>Calibre predominante</th></tr></thead><tbody>' +
       filas.map((f) => `<tr><td>${esc(f.fuente)}</td><td>${f.n}</td><td>${f.ancho.n ? f1(f.ancho.media) : '—'}</td>` +
-        `<td>${esc(f.calibre)}</td></tr>`).join('') + '</tbody></table></div></div>';
+        `<td>${f.peso.n ? f1(f.peso.media) : '—'}</td><td>${esc(f.calibre)}</td></tr>`).join('') + '</tbody></table></div></div>';
   }
 
   // ---------- estado y eventos ----------
@@ -218,8 +232,7 @@
     $('#dash-total').textContent = `Total de frutos analizados: ${r.definitivas.length}`;
     $('#dash-kpi').innerHTML = dibujarKpis(r);
     $('#graficas').innerHTML =
-      dibujarTabla(r.porArchivo) +
-      '<p class="chico">Los cortes de calibre (55 y 70 mm) son provisionales hasta que el equipo defina los oficiales.</p>';
+      dibujarTabla(r.porArchivo);
   }
 
   async function cargar(archivo) {

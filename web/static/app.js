@@ -114,6 +114,15 @@ function aplicarModoDidactico(activo, guardar = true) {
 }
 $('#modo-did').addEventListener('change', (e) => aplicarModoDidactico(e.target.checked));
 
+// ---------- calibración: distancia cámara-superficie (Ajustes > Calibración) ----------
+$('#btn-calib').addEventListener('click', async () => {
+  const cm = Number($('#calib-dist').value);
+  const r = await post('/api/calibracion', { body: JSON.stringify({ distancia_cm: cm }) });
+  $('#calib-nota').textContent = r.mensaje || '';
+  refrescar();
+});
+$('#calib-dist').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('#btn-calib').click(); });
+
 // ---------- temas de color (Ajustes > Temas) ----------
 const TEMAS = [
   { id: '', nombre: 'Default', desc: 'El verde de siempre', colores: ['#2f7d32', '#1f5fa8', '#f8faf7'] },
@@ -185,6 +194,14 @@ function render(s) {
   $('#btn-guardar').disabled = !s.puede_guardar;
   pintarCola(s);
 
+  // "muestra completa": toda la cola procesada y con registros. El botón se resalta como Iniciar, pero queda
+  // siempre disponible porque el dashboard también sirve para cargar un CSV anterior.
+  const completa = !s.ocupado && s.cola.length > 0 && s.cola.every((c) => c.estado === 'Listo') && s.puede_guardar;
+  $('#btn-dash').classList.toggle('lista', completa);
+  $('#btn-dash').title = completa ? 'Muestra completa: abre el dashboard' : 'Abre el dashboard (también sirve para cargar un CSV)';
+
+  if (s.calibracion_cfg && document.activeElement !== $('#calib-dist')) $('#calib-dist').value = s.calibracion_cfg.distancia_cm;
+
   $('#titulo-actual').textContent = s.interrumpida
     ? '⚠ Últimos resultados — anteriores a la interrupción de la fuente'
     : (s.observaciones.length ? `Observaciones actuales: ${s.observaciones.length} objeto(s) en el cuadro` : 'Sin observaciones');
@@ -197,7 +214,7 @@ function render(s) {
   const prov = s.registro.filter((r) => r.estado_registro === 'Provisional').length;
   $('#titulo-registro').textContent = `${s.registro.length} registro(s) — ${prov} provisional(es). Una fila por tomate (por ID) de cada archivo, no por cuadro.`;
   $('#t-registro').innerHTML = s.registro.map((r) =>
-    `<tr><td>${esc(r.fuente)}</td><td>${r.id}</td><td>${r.cuadro}</td><td>${mm(r.ancho_mm)}</td><td>${esc(r.calibre)}</td><td>${esc(r.estado_registro)}</td></tr>`).join('');
+    `<tr><td>${esc(r.fuente)}</td><td>${r.id}</td><td>${r.cuadro}</td><td>${mm(r.ancho_mm)}</td><td>${esc(r.calibre)}</td></tr>`).join('');
 
   $('#tab-incid').textContent = `Incidencias${s.incidencias.length ? ` (${s.incidencias.length})` : ''}`;
   $('#lista-incid').innerHTML = s.incidencias.length
@@ -388,8 +405,8 @@ const iniciar = accion('/api/iniciar'), pausar = accion('/api/pausa'), terminar 
 };
 async function guardar() {
   if ($('#btn-guardar').disabled) return;
-  if (!confirm('¿Guardar los dos CSV (Excel y para programas) y la vista anotada?')) return;
-  const descargas = [['/api/registro.csv?formato=excel', 'registro.csv'], ['/api/registro.csv?formato=datos', 'registro_datos.csv'],
+  if (!confirm('¿Guardar el CSV del operador, el CSV técnico y la vista anotada?')) return;
+  const descargas = [['/api/registro.csv?formato=operador', 'registro_operador.csv'], ['/api/registro.csv?formato=tecnico', 'registro_tecnico.csv'],
     ['/api/vista.png', 'vista_anotada.png']];
   for (const [url, nombre] of descargas) {
     const a = document.createElement('a'); a.href = url; a.download = nombre; document.body.append(a); a.click(); a.remove();
@@ -409,7 +426,6 @@ $('#cola').addEventListener('click', async (e) => {
   await post(`/api/cola/quitar?i=${b.dataset.quitar}`); refrescar();
 });
 $('#btn-repetir').addEventListener('click', repetir);
-$('#btn-muestra').addEventListener('click', accion('/api/fuente/muestra'));
 $('#btn-camara').addEventListener('click', async () => {
   await post(`/api/fuente/camara?n=${encodeURIComponent($('#camara-n').value || 0)}`); refrescar();
 });

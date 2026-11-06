@@ -13,9 +13,6 @@
 <header class="barra">
   <div class="marca"><span class="logo" aria-hidden="true">🍅</span>
     <div><h1>AgroVision</h1><p>Para la inspección visual de tomates</p></div></div>
-  <label class="interruptor" title="Muestra las etapas intermedias, el esquema del flujo y la explicación del pipeline">
-    <input type="checkbox" id="modo-did"> <span>Modo didáctico</span>
-  </label>
 </header>
 
 <main class="rejilla">
@@ -58,6 +55,18 @@
         </div>
       </details>
       <details class="submenu">
+        <summary>Calibración</summary>
+        <p class="explica">La distancia de la cámara a la superficie donde están los tomates se guarda en
+          <code>config/calib.json</code>. Si la cambias, la calibración queda <b>pendiente de verificación</b>:
+          la escala px/mm no se recalcula sola, hay que volver a medir con el patrón.</p>
+        <div class="fila calib-fila">
+          <label class="campo">Distancia cámara-superficie [cm]
+            <input id="calib-dist" type="number" min="10" max="500" step="1" value="90"></label>
+          <button id="btn-calib" class="sec">Aplicar</button>
+          <span id="calib-nota" class="chico"></span>
+        </div>
+      </details>
+      <details class="submenu">
         <summary>Temas</summary>
         <p class="explica">Paletas inspiradas en frutas. El tema se aplica a toda la interfaz y al dashboard, y se recuerda en este navegador.</p>
         <div class="temas" id="temas" role="radiogroup" aria-label="Tema de color"></div>
@@ -86,7 +95,7 @@
         <button id="btn-iniciar" class="prim"><kbd>W</kbd> Iniciar</button>
         <button id="btn-pausa" class="sec" title="Pausa el análisis; vuelve a presionar para continuar donde quedó"><kbd>S</kbd> Pausar</button>
         <button id="btn-terminar" class="sec" title="Termina la sesión: conserva lo registrado y no se puede continuar"><kbd>Esc</kbd> Terminar</button>
-        <button id="btn-guardar" class="sec" title="Guarda el CSV para Excel, el CSV para programas y la vista anotada"><kbd>E</kbd> Guardar</button>
+        <button id="btn-guardar" class="sec" title="Guarda el CSV del operador, el CSV técnico y la vista anotada"><kbd>E</kbd> Guardar</button>
         <button id="btn-repetir" class="sec" title="Descarta los resultados y vuelve a poner toda la cola en espera"><kbd>R</kbd> Repetir</button>
       </div>
     </div>
@@ -99,10 +108,10 @@
         <input id="archivo" type="file" accept=".png,.jpg,.jpeg,.bmp,.mp4,.avi,.mov,.mkv" multiple hidden>
       </div>
       <div class="fila">
-        <button id="btn-muestra" class="sec">Agregar foto de ejemplo</button>
-        <label class="camara">Cámara n°
-          <input id="camara-n" type="number" min="0" max="9" value="0"></label>
+        <span>ó</span>
         <button id="btn-camara" class="sec">Usar cámara</button>
+        <label class="camara">Cámara N°
+          <input id="camara-n" type="number" min="0" max="9" value="0"></label>
       </div>
       <div id="cola-caja" hidden>
         <div class="fila cola-cab">
@@ -137,7 +146,7 @@
       <div id="p-registro" class="panel" hidden>
         <p id="titulo-registro" class="chico">Una fila por tomate (por ID), no por cuadro.</p>
         <div class="tabla-caja"><table>
-          <thead><tr><th>Archivo</th><th>ID</th><th>Cuadro</th><th>Ancho mm</th><th>Calibre</th><th>Estado del registro</th></tr></thead>
+          <thead><tr><th>Archivo</th><th>ID</th><th>Cuadro</th><th>Ancho mm</th><th>Calibre</th></tr></thead>
           <tbody id="t-registro"></tbody></table></div>
       </div>
 
@@ -157,7 +166,7 @@
     <div class="dash-controles">
       <label><input type="radio" name="dash-origen" value="sesion" checked> Sesión actual</label>
       <label><input type="radio" name="dash-origen" value="csv"> Archivo CSV</label>
-      <button id="dash-cargar" class="sec chico-btn" title="Acepta el CSV para Excel (;) o el de datos (,)">Cargar CSV…</button>
+      <button id="dash-cargar" class="sec chico-btn" title="Acepta el CSV del operador (;) o el técnico (,)">Cargar CSV…</button>
       <input type="file" id="dash-archivo" accept=".csv,text/csv" hidden>
       <label>Archivo <select id="dash-f-archivo"></select></label>
     </div>
@@ -178,7 +187,12 @@
   </div>
 </section>
 
-<footer class="pie">Proyecto iniciado para el curso de TEL328</footer>
+<footer class="pie">
+  <span>Proyecto iniciado para el curso de TEL328</span>
+  <label class="interruptor" title="Muestra las etapas intermedias, el esquema del flujo y la explicación del pipeline">
+    <input type="checkbox" id="modo-did"> <span>Modo didáctico</span>
+  </label>
+</footer>
 
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 <script src="/dashboard.js"></script>

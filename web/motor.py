@@ -13,6 +13,7 @@ Concurrencia: un hilo de procesamiento escribe el estado; los hilos HTTP lo leen
 al estado compartido pasa por `self.lock`.
 """
 
+import json
 import tempfile
 import threading
 import time
@@ -23,7 +24,7 @@ import cv2
 import numpy as np
 
 from funciones.acq import SourceState, VideoSource
-from interfaz.pipeline import PipelineInspeccion, leer_imagen
+from interfaz.pipeline import CONFIG_CALIB, PipelineInspeccion, leer_imagen
 from interfaz.sesion import SesionRegistro, exportar_sesiones
 
 RAIZ = Path(__file__).resolve().parent.parent
@@ -38,6 +39,8 @@ EN_ESPERA, EN_PROCESO, TERMINADO, INTERRUMPIDO, DETENIDO, ERROR = (
     "En espera", "Procesando", "Listo", "Interrumpido", "Detenido", "Error")
 
 ROI_MIN = 20  # lado mínimo de la zona de medición, en px
+DISTANCIA_DEFECTO_CM = 90          # distancia cámara-superficie por defecto, en cm
+DISTANCIA_MIN_CM, DISTANCIA_MAX_CM = 10, 500
 # Umbrales HSV por defecto de ClassicSegmenter y tope de cada canal (H 0-179, S y V 0-255).
 HSV_DEFECTO = ((0, 70, 50), (179, 255, 255))
 HSV_TOPE = (179, 255, 255)
@@ -68,7 +71,9 @@ class Motor:
         self.hsv = HSV_DEFECTO     # se reemplaza completo (tupla), nunca se muta
         self.roi = None             # zona de medición (x, y, ancho, alto); None = cuadro completo
         self.frame_vista = None     # cuadro fijo para la vista previa (imagen o 1.er cuadro de un video)
-        self.calibracion = PipelineInspeccion().estado_calibracion
+        base = PipelineInspeccion()
+        self.calibracion = base.estado_calibracion
+        self.distancia_cm = base.distancia_camara_cm if base.distancia_camara_cm is not None else DISTANCIA_DEFECTO_CM
         self._n_archivo = 0         # para nombres únicos de subida
         self._n_sesion = 0          # para ids únicos de sesión
         self._lote = None
@@ -219,6 +224,40 @@ class Motor:
         except Exception as exc:  # noqa: BLE001
             return False, str(exc)
         return True, ""
+
+    # ------------------------------------- calibración: distancia cámara-superficie
+    def fijar_distancia(self, cm):
+        """Guarda la distancia cámara-superficie en config/calib.json (clave camera_height_mm).
+        Al cambiarla, la calibración queda pendiente de verificación (RF10): la escala px/mm NO se
+        recalcula sola, hay que volver a medir con el patrón (T2.5.1)."""
+        try:
+            cm = float(cm)
+        except (TypeError, ValueError):
+            return False, "La distancia debe ser un número"
+        if not DISTANCIA_MIN_CM <= cm <= DISTANCIA_MAX_CM:
+            return False, f"La distancia debe estar entre {DISTANCIA_MIN_CM} y {DISTANCIA_MAX_CM} cm"
+        with self.lock:
+            if self._ocupado():
+                return False, "Termina la sesión antes de cambiar la calibración"
+            if abs(cm - self.distancia_cm) < 1e-9:
+                return True, f"Sin cambios: la distancia ya es {cm:g} cm"
+            try:
+                try:
+                    config = json.loads(Path(CONFIG_CALIB).read_text(encoding="utf-8"))
+                except FileNotFoundError:
+                    config = {}
+                mm = round(cm * 10, 1)
+                config["camera_height_mm"] = int(mm) if mm == int(mm) else mm  # 900, no 900.0
+                config["validated"] = False  # cambió la geometría: pendiente de verificación
+                tmp = Path(str(CONFIG_CALIB) + ".tmp")
+                tmp.write_text(json.dumps(config, indent=4, ensure_ascii=False) + "\n", encoding="utf-8")
+                tmp.replace(CONFIG_CALIB)
+            except (OSError, ValueError) as exc:
+                return False, f"No se pudo guardar config/calib.json: {exc}"
+            self.distancia_cm = cm
+            self.calibracion = PipelineInspeccion().estado_calibracion
+            return True, (f"Distancia guardada: {cm:g} cm. Calibración pendiente de verificación: "
+                          "la escala px/mm no se recalcula sola.")
 
     # ------------------------------------------------- zona de medición (ROI)
     def _roi_efectivo(self, ancho, alto):
@@ -522,6 +561,7 @@ class Motor:
                 "fps": round(self.cuadros / seg, 1) if self._ocupado() else None,
                 "ocupado": self._ocupado(), "interrumpida": self.interrumpida, "pausada": self.pausada,
                 "calibracion": self.calibracion,
+                "calibracion_cfg": {"distancia_cm": self.distancia_cm},
                 "hsv": {"min": list(self.hsv[0]), "max": list(self.hsv[1]),
                         "defecto_min": list(HSV_DEFECTO[0]), "defecto_max": list(HSV_DEFECTO[1])},
                 "roi": {"valor": roi, "cuadro": list(dim) if dim else None, "personalizada": self.roi is not None},
@@ -542,15 +582,15 @@ class Motor:
                     "madurez": contar("madurez"), "manchas": contar("manchas"),
                     "calibre": contar("calibre")}
 
-    def exportar_csv(self, formato="excel"):
-        """Escribe el CSV de toda la cola en una carpeta temporal y devuelve (ok, ruta_o_mensaje)."""
+    def exportar_csv(self, formato="operador"):
+        """Escribe el CSV de toda la cola en una carpeta temporal y devuelve (ok, ruta_o_mensaje).
+        formato: 'operador' (para Excel) o 'tecnico' (para procesar con código)."""
         with self.lock:
             sesiones = [s for s in self._sesiones() if s.filas]
             if not sesiones:
                 return False, "No hay registros para guardar todavía"
-            formato = "datos" if formato == "datos" else "excel"
-            sufijo = "_datos" if formato == "datos" else ""
-            ruta = self.carpeta_tmp / f"registro_{self._lote}{sufijo}.csv"
+            formato = "tecnico" if formato in ("tecnico", "datos") else "operador"
+            ruta = self.carpeta_tmp / f"registro_{self._lote}_{formato}.csv"
             ok, msg = exportar_sesiones(sesiones, ruta, formato)
             if not ok:
                 if self.sesion:

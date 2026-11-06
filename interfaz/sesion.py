@@ -19,70 +19,90 @@ from pathlib import Path
 PROVISIONAL = "Provisional"
 CONFIRMADO = "Confirmado"
 
-CAMPOS = ["sesion", "fuente", "id", "cuadro", "instante", "tipo", "ancho_px", "ancho_mm",
-          "calibre", "estado_calibre", "madurez", "manchas", "estado_registro",
-          "version_calibracion", "incidencia"]
 
 INCIDENCIA_AUSENTES = "madurez y manchas vacías: módulos A3.1/A3.2 no integrados"
 
-CAMPOS_EXCEL = ["Sesión", "Fuente", "ID", "Cuadro", "Hora", "Tipo", "Ancho (px)", "Ancho (mm)",
-                "Calibre", "Estado del calibre", "Madurez", "Manchas", "Estado del registro",
-                "px por mm", "Calibración validada", "Zona de medición [x, y, ancho, alto]", "HSV mínimo", "HSV máximo", "Observación"]
+# Dos CSV de salida, pensados para lectores distintos:
+# - operador: lo que se lee en Excel en español (separador ";", coma decimal, columnas cortas).
+#   Solo trae registros definitivos, porque no incluye la columna de estado del registro.
+# - técnico: todas las filas y toda la configuración desglosada en columnas, para procesarlo con
+#   código (separador ",", punto decimal, nombres de columna técnicos).
+CAMPOS_OPERADOR = ["Sesión", "Hora", "Fuente", "ID", "Cuadro", "Tipo", "Ancho (px)", "Ancho (mm)",
+                   "Peso (g)", "Calibre", "Madurez", "Manchas"]
+CAMPOS_TECNICO = ["sesion", "fuente", "id", "cuadro", "instante", "tipo", "ancho_px", "ancho_mm", "peso_g",
+                  "calibre", "estado_calibre", "madurez", "manchas", "estado_registro",
+                  "px_per_mm", "calibracion_validada", "distancia_camara_cm", "roi_x", "roi_y", "roi_w", "roi_h",
+                  "hsv_h_min", "hsv_s_min", "hsv_v_min", "hsv_h_max", "hsv_s_max", "hsv_v_max", "incidencia"]
+ALIAS_FORMATO = {"excel": "operador", "operador": "operador", "datos": "tecnico", "tecnico": "tecnico"}
 
 
 def _coma(valor):
     return str(valor).replace(".", ",") if isinstance(valor, float) else valor
 
 
-def _fila_excel(fila):
-    """Fila legible: hora en vez de epoch, calibración desglosada, coma decimal."""
+def _tipo_base(tipo):
+    """"Tomate (asumido, sin modelo de tipo)" -> "Tomate"."""
+    return str(tipo).split(" (")[0].strip()
+
+
+def _fila_operador(fila):
     instante = fila["instante"]
     hora = (datetime.fromtimestamp(instante).strftime("%H:%M:%S") if instante > 1e9
             else f"{instante:.2f} s")
-    version = fila["version_calibracion"]
-    px_mm = re.search(r"px_per_mm=([\d.]+)", version)
-    validada = re.search(r"validada=(\w+)", version)
-    zona = re.search(r"roi=(\[[^\]]*\])", version)
-    hsv = re.search(r"hsv=(\[[^\]]*\])-(\[[^\]]*\])", version)
     return {
-        "Sesión": fila["sesion"], "Fuente": fila["fuente"], "ID": fila["id"],
-        "Cuadro": fila["cuadro"], "Hora": hora, "Tipo": fila["tipo"],
+        "Sesión": fila["sesion"], "Hora": hora, "Fuente": fila["fuente"], "ID": fila["id"],
+        "Cuadro": fila["cuadro"], "Tipo": _tipo_base(fila["tipo"]),
         "Ancho (px)": fila["ancho_px"], "Ancho (mm)": _coma(fila["ancho_mm"]),
-        "Calibre": fila["calibre"], "Estado del calibre": fila["estado_calibre"],
-        "Madurez": fila["madurez"], "Manchas": fila["manchas"],
-        "Estado del registro": fila["estado_registro"],
-        "px por mm": _coma(float(px_mm.group(1))) if px_mm else version,
-        "Calibración validada": validada.group(1) if validada else "",
-        "Zona de medición [x, y, ancho, alto]": zona.group(1) if zona else "",
-        "HSV mínimo": hsv.group(1) if hsv else "", "HSV máximo": hsv.group(2) if hsv else "",
-        "Observación": fila["incidencia"],
+        "Peso (g)": _coma(fila.get("peso_g", "")),
+        "Calibre": fila["calibre"], "Madurez": fila["madurez"], "Manchas": fila["manchas"],
     }
 
 
-def exportar_sesiones(sesiones, ruta, formato="excel"):
+def _fila_tecnico(fila):
+    """Fila para procesar con código: la configuración vigente va desglosada en columnas."""
+    version = fila["version_calibracion"]
+    px_mm = re.search(r"px_per_mm=([\d.]+)", version)
+    validada = re.search(r"validada=(\w+)", version)
+    roi = re.search(r"roi=\[(\d+), (\d+), (\d+), (\d+)\]", version)
+    hsv = re.search(r"hsv=\[(\d+), (\d+), (\d+)\]-\[(\d+), (\d+), (\d+)\]", version)
+    dist = re.search(r"dist_cm=([\d.]+)", version)
+    cfg = {"px_per_mm": px_mm.group(1) if px_mm else "", "distancia_camara_cm": dist.group(1) if dist else "",
+           "calibracion_validada": {"sí": "true", "si": "true", "no": "false"}.get(validada.group(1), "") if validada else ""}
+    for k, v in zip(("roi_x", "roi_y", "roi_w", "roi_h"), roi.groups() if roi else [""] * 4):
+        cfg[k] = v
+    for k, v in zip(("hsv_h_min", "hsv_s_min", "hsv_v_min", "hsv_h_max", "hsv_s_max", "hsv_v_max"),
+                    hsv.groups() if hsv else [""] * 6):
+        cfg[k] = v
+    return {**{k: fila.get(k, "") for k in CAMPOS_TECNICO if k not in cfg}, **cfg}
+
+
+def exportar_sesiones(sesiones, ruta, formato="operador"):
     """Escribe en un solo CSV las filas de varias sesiones (una por archivo de la cola).
-    formato='excel': separador ';', coma decimal, columnas legibles (Excel en español).
-    formato='datos': separador ',', punto decimal, nombres técnicos (para programas)."""
+    formato='operador' (o 'excel') o formato='tecnico' (o 'datos'); ver los comentarios de arriba."""
+    formato = ALIAS_FORMATO.get(formato, "operador")
     ruta = Path(ruta)
     filas = [f for s in sesiones for _, f in sorted(s.filas.items())]
+    if formato == "operador":
+        filas = [f for f in filas if f["estado_registro"] != PROVISIONAL]  # sin columna de estado: solo definitivos
     try:
         ruta.parent.mkdir(parents=True, exist_ok=True)
         with open(ruta, "w", newline="", encoding="utf-8-sig") as f:
-            if formato == "excel":
-                escritor = csv.DictWriter(f, fieldnames=CAMPOS_EXCEL, delimiter=";")
+            if formato == "operador":
+                escritor = csv.DictWriter(f, fieldnames=CAMPOS_OPERADOR, delimiter=";")
                 escritor.writeheader()
                 for fila in filas:
-                    escritor.writerow(_fila_excel(fila))
+                    escritor.writerow(_fila_operador(fila))
             else:
-                escritor = csv.DictWriter(f, fieldnames=CAMPOS, extrasaction="ignore")
+                escritor = csv.DictWriter(f, fieldnames=CAMPOS_TECNICO)
                 escritor.writeheader()
                 for fila in filas:
-                    escritor.writerow(fila)
+                    escritor.writerow(_fila_tecnico(fila))
     except OSError as exc:
         return False, f"No se pudo escribir {ruta}: {exc}"
     for s in sesiones:
         s.version_guardada = s.version
     return True, f"{len(filas)} registro(s) guardados en {ruta}"
+
 
 
 class SesionRegistro:
@@ -120,6 +140,7 @@ class SesionRegistro:
             "instante": round(instante, 3), "tipo": "Tomate (asumido, sin modelo de tipo)",
             "ancho_px": obs.ancho_px,
             "ancho_mm": "" if obs.ancho_mm is None else obs.ancho_mm,
+            "peso_g": "",  # A3.4 (estimación de peso) aún no está integrada: vacío, nunca cero
             "calibre": obs.calibre, "estado_calibre": obs.estado_calibre,
             "madurez": "", "manchas": "",
             "estado_registro": PROVISIONAL, "version_calibracion": self.version_calibracion,

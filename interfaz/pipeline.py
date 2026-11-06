@@ -98,9 +98,14 @@ class PipelineInspeccion:
         self.seguidor = CentroidTracker()
         self.calibrador = Calibrator(str(CONFIG_CALIB))
         self.calibracion_validada = False
+        self.distancia_camara_cm = None  # distancia cámara-superficie, de "camera_height_mm" en calib.json
         try:
             with open(CONFIG_CALIB, "r", encoding="utf-8") as f:
-                self.calibracion_validada = bool(json.load(f).get("validated", False))
+                config = json.load(f)
+            self.calibracion_validada = bool(config.get("validated", False))
+            altura_mm = config.get("camera_height_mm")
+            if isinstance(altura_mm, (int, float)):
+                self.distancia_camara_cm = altura_mm / 10
         except (OSError, ValueError):
             pass  # sin config legible: se queda como "no validada"
 
@@ -108,7 +113,8 @@ class PipelineInspeccion:
     def version_calibracion(self):
         validada = "sí" if self.calibracion_validada else "no"
         roi = [int(v) for v in self.calibrador.valid_roi]
-        return f"px_per_mm={self.calibrador.scale_px_per_mm}; validada={validada}; roi={roi}"
+        dist = f"; dist_cm={self.distancia_camara_cm:g}" if self.distancia_camara_cm is not None else ""
+        return f"px_per_mm={self.calibrador.scale_px_per_mm}; validada={validada}; roi={roi}{dist}"
 
     @property
     def estado_calibracion(self):
