@@ -90,7 +90,7 @@ validar)".
 ```shell
 python -m pip install -r requirements-tracking.txt
 python -B -m unittest discover -s test -v
-python -B -m examples.demo_tracking
+python -B -m examples.tracking.demo_tracking
 ```
 
 La [guía de seguimiento](docs/tracking/seguimiento.md) explica cómo reproducir la demostración. Los [resultados sintéticos](salida-tracking/README.md) incluyen el video anotado y las observaciones por cuadro.

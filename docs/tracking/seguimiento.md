@@ -35,8 +35,8 @@ Para completar RF9 quedan la evaluación con identidades anotadas en videos real
 ```sh
 python -m pip install -r requirements-tracking.txt
 python -B -m unittest discover -s test -v
-python -B -m examples.demo_tracking
-python -B -m examples.demo_tracking_kalman --output salida-reproduccion
+python -B -m examples.tracking.demo_tracking
+python -B -m examples.tracking.demo_tracking_kalman --output salida-reproduccion
 ```
 
 La última orden genera un MP4 anotado con Kalman y un JSON con las observaciones de ambos métodos. La carpeta de destino indicada permite comparar una nueva ejecución con la evidencia publicada.

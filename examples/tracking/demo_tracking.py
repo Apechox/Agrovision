@@ -1,6 +1,6 @@
 """Demostración reproducible del tracker actual con detecciones inventadas.
 
-Desde la raíz: python -B -m examples.demo_tracking
+Desde la raíz: python -B -m examples.tracking.demo_tracking
 Los nombres A/B y las trayectorias de este guion son evidencia de prueba;
 no son información que reciba o produzca automáticamente el tracker.
 """

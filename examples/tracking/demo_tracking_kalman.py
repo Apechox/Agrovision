@@ -1,6 +1,6 @@
 """Genera un video sintético de segmentación + tracking y evidencia por cuadro.
 
-python -B -m examples.demo_tracking_kalman --output salida-tracking
+python -B -m examples.tracking.demo_tracking_kalman --output salida-tracking
 No representa tomates reales ni acredita precisión en la cinta transportadora.
 """
 import argparse
