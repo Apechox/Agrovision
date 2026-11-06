@@ -96,7 +96,6 @@ La sección 3 mostró un problema real sobre una foto real: un tallo cruzando po
 |---|---|
 | ![](evidencia_segmentacion/20_tallo_antes_7_instancias.png) | ![](evidencia_segmentacion/21_tallo_despues_6_instancias.png) |
 
-**Verificación de que no se dañó nada más:** de las otras 5 frutas de la foto, 3 prácticamente no cambiaron de área (+0.3%, +1.7%, +1.2% — ruido de redondeo del cierre más grande), y 2 crecieron un poco más (+18.6% y +12.5%) porque el cierre más grande también alcanzó a rellenar huecos reales más chicos en esas mismas frutas (un reflejo o la sombra de una hoja); siguen siendo una sola instancia cada una, no se fusionaron con su vecina. El conteo bajó de 7 a 6 — exactamente una fusión, la correcta, confirmando que `kernel_size_cierre=21` resuelve este caso puntual sin generar fusiones de más.
 
 ### 5.2 Frutas que sí son dos y se tocan — separadas con Watershed
 
