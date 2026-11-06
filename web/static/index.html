@@ -137,7 +137,19 @@
       </div>
 
       <div id="p-dash" class="panel" hidden>
+        <div class="fila dash-origen">
+          <label><input type="radio" name="dash-origen" value="sesion" checked> Sesión actual</label>
+          <label><input type="radio" name="dash-origen" value="csv"> Archivo CSV</label>
+          <button id="dash-cargar" class="sec chico-btn" title="Acepta el CSV para Excel (;) o el de datos (,)">Cargar CSV…</button>
+          <input type="file" id="dash-archivo" accept=".csv,text/csv" hidden>
+        </div>
+        <p id="dash-nombre" class="chico"></p>
+        <div class="fila dash-filtros">
+          <label>Archivo <select id="dash-f-archivo"></select></label>
+          <label>Fruto <select id="dash-f-fruto"></select></label>
+        </div>
         <p id="titulo-dash" class="chico"></p>
+        <div id="dash-kpi" class="kpis"></div>
         <div id="graficas" class="graficas"></div>
       </div>
     </div>
@@ -145,6 +157,7 @@
 </main>
 
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+<script src="/dashboard.js"></script>
 <script src="/app.js"></script>
 </body>
 </html>

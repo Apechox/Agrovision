@@ -120,7 +120,7 @@ function elegirPanel(id) {
   panel = id;
   document.querySelectorAll('[data-panel]').forEach((b) => b.classList.toggle('activa', b.dataset.panel === id));
   document.querySelectorAll('.panel').forEach((p) => (p.hidden = p.id !== id));
-  if (id === 'p-dash') refrescarDashboard();
+  if (id === 'p-dash') Dash.pintar();
 }
 document.querySelectorAll('[data-panel]').forEach((b) => b.addEventListener('click', () => elegirPanel(b.dataset.panel)));
 
@@ -166,7 +166,8 @@ function render(s) {
   $('#lista-incid').innerHTML = s.incidencias.length
     ? s.incidencias.map((i) => `<li><b>${esc(i.hora)} · ${esc(i.origen)}</b> — ${esc(i.causa)} <span class="chico">(${esc(i.fuente)})</span></li>`).join('')
     : '<li class="vacio">Sin incidencias.</li>';
-  if (panel === 'p-dash') refrescarDashboard();
+  Dash.setSesion(s.registro);  // el dashboard calcula en el navegador con lo que la página acaba de leer
+  if (panel === 'p-dash') Dash.pintar();
 }
 function pintarCola(s) {
   const caja = $('#cola-caja');
@@ -217,19 +218,8 @@ async function refrescar() {
 }
 
 // ---------- dashboard ----------
-async function refrescarDashboard() {
-  const d = await (await fetch('/api/dashboard', { cache: 'no-store' })).json();
-  $('#titulo-dash').textContent = `Registros definitivos: ${d.definitivos} (provisionales excluidos: ${d.provisionales})`;
-  const nota = { madurez: 'Sin datos: módulo A3.1 pendiente', manchas: 'Sin datos: módulo A3.2 pendiente', calibre: 'Sin datos' };
-  const grafica = (titulo, clave) => {
-    const datos = d[clave]; const total = Object.values(datos).reduce((a, b) => a + b, 0);
-    const filas = total ? Object.entries(datos).map(([k, v]) =>
-      `<div class="barra-fila"><span>${esc(k)}</span><div class="barra-pista"><div class="barra-valor" style="width:${(v / total) * 100}%"></div></div>` +
-      `<span>${v} (${Math.round((v / total) * 100)}%)</span></div>`).join('') : `<p class="chico">${nota[clave]}</p>`;
-    return `<div class="grafica"><h3>${titulo}</h3>${filas}</div>`;
-  };
-  $('#graficas').innerHTML = grafica('Madurez Visual', 'madurez') + grafica('Calidad Visual', 'manchas') + grafica('Calibre Aparente', 'calibre');
-}
+// La lógica vive en dashboard.js (Dash): lee la sesión actual o un CSV cargado.
+Dash.iniciar();
 
 // ---------- zona de medición (ROI) arrastrable ----------
 const ROI_MIN = 20, roiEl = $('#roi');
