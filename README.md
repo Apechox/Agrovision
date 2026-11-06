@@ -60,10 +60,16 @@ Consulta opciones, incluidos los límites HSV, con `python main_test.py --help`.
 python -m interfaz.app
 ```
 
-Implementa el modelo de navegación de la sección 6 del documento de diseño: adjuntar
-imagen/video (Q), iniciar procesamiento (W), guardar (E), repetir (R), salir (Esc) y abrir
-el dashboard (D) con los gráficos de Madurez Visual, Calidad Visual y Calibre Aparente.
-Reutiliza el mismo pipeline que `main_test.py`, no duplica lógica de visión.
+Eventos de la sección 6 del documento de diseño: adjuntar imagen/video (Q), iniciar
+procesamiento (W), detener (S), guardar CSV + vista anotada (E), repetir (R), dashboard (D)
+y salir (Esc). También acepta cámara en vivo (selector "Cámara n°").
+
+Usa solo los módulos que existen hoy (`funciones/seg.py`, `track.py`, `calib.py`, `acq.py`)
+a través de `interfaz/pipeline.py`. **Madurez y manchas (A3.1/A3.2) y el registro M6
+(`funciones/registro.py`) aún no están en el repo**: sus columnas salen como "Pendiente" /
+vacías, y `interfaz/sesion.py` es un registro provisional hasta integrar M6.
+
+Pestañas: observaciones actuales, registro de sesión (una fila por ID) e incidencias.
 
 ## Estado de calibración
 
