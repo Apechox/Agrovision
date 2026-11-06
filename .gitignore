@@ -1,1 +1,8 @@
 __pycache__
+labels.cache
+runs
+yolo11n.pt
+yolov8n-seg.pt
+tests
+videos_prueba
+salida
