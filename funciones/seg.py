@@ -1,5 +1,5 @@
 """
-MÓDULO DE SEGMENTACIÓN 
+MÓDULO DE SEGMENTACIÓN
 
 El método `process(frame)` SIEMPRE debe devolver `(clean_mask, instances)`, donde `instances`
 es una lista de diccionarios con exactamente estas llaves:
@@ -20,7 +20,8 @@ class ClassicSegmenter:
     def __init__(self, kernel_size=5, min_area_px=500, hsv_lower=(0, 70, 50),
                  hsv_upper=(179, 255, 255), rangos_extra=None,
                  fondo_referencia=None, umbral_diferencia=30,
-                 separar_contacto=False, ajuste_pico=0.5):
+                 separar_contacto=False, ajuste_pico=0.5,
+                 kernel_size_cierre=None):
         """
         hsv_lower/hsv_upper: rango de color principal a buscar.
         rangos_extra: lista opcional de (lower, upper) adicionales -- se combinan con OR
@@ -30,8 +31,16 @@ class ClassicSegmenter:
             la segmentación es solo por color, igual que antes.
         umbral_diferencia: solo se usa si se da `fondo_referencia` -- diferencia mínima
             (0-255) para considerar un píxel "distinto al fondo".
+        kernel_size_cierre: tamaño del kernel para el CIERRE (rellenar huecos/puentear
+            un tallo o rama que corta a la fruta en 2), por separado del de APERTURA
+            (`kernel_size`, que solo saca ruido). Si no se da, usa el mismo que
+            `kernel_size`. Conviene agrandar SOLO este, no los dos juntos -- agrandar
+            también la apertura erosiona el contorno real de la fruta (ver
+            docs/segmentacion.md, sección 6, la comparación de ambos enfoques).
         """
-        self.kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_size, kernel_size))
+        self.kernel_apertura = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_size, kernel_size))
+        k_cierre = kernel_size_cierre if kernel_size_cierre is not None else kernel_size
+        self.kernel_cierre = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (k_cierre, k_cierre))
         self.min_area_px = min_area_px
         self.rangos = [(np.array(hsv_lower), np.array(hsv_upper))]
         if rangos_extra:
@@ -96,8 +105,8 @@ class ClassicSegmenter:
             raw_mask = cv2.bitwise_and(raw_mask, self._mascara_fondo(frame))
 
         # Limpieza morfológica (elimina ruido blanco y rellena huecos negros)
-        clean_mask = cv2.morphologyEx(raw_mask, cv2.MORPH_OPEN, self.kernel)
-        clean_mask = cv2.morphologyEx(clean_mask, cv2.MORPH_CLOSE, self.kernel)
+        clean_mask = cv2.morphologyEx(raw_mask, cv2.MORPH_OPEN, self.kernel_apertura)
+        clean_mask = cv2.morphologyEx(clean_mask, cv2.MORPH_CLOSE, self.kernel_cierre)
 
         # 2. Encontrar contornos de cada tomate
         contours, _ = cv2.findContours(clean_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
