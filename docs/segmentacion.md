@@ -124,6 +124,5 @@ Los IDs 2, 3 y 5 también se mantuvieron estables los 120 cuadros. Algunos IDs a
 
 ## 9. Qué falta / próximos pasos
 
-- **Fusión de blobs que se tocan:** un tomate que tapa a otro, o una rama que cruza por delante, puede partir una instancia en varias o fusionar dos en una (visto tanto en foto real como en video sintético de oclusión). Pendiente resolver con Watershed o separación por erosión.
 - **Sustracción de fondo con cámara fija:** las pruebas de video real se hicieron con un cuadro cualquiera del mismo video como referencia de fondo (no había una toma vacía). Funciona, pero con margen ajustado. Recomendación: grabar unos segundos de la tela/cinta vacía con la cámara fija antes de poner la fruta.
-- **Reconocimiento de especie (OE4):** hoy el color/rango hay que ajustarlo a mano por especie. La idea de diseño es que el modelo entrenado (`modelo/`) reconozca la especie y el sistema elija automáticamente el perfil de parámetros (color, calibración, madurez) correspondiente — ver `modelo/README.md`.
+- **Reconocimiento de especie (OE4):** hoy el color/rango hay que ajustarlo a mano por especie. La idea de diseño es que el modelo entrenado (`modelo/`) reconozca la especie y el sistema elija automáticamente el perfil de parámetros (color, calibración, madurez) correspondiente.
