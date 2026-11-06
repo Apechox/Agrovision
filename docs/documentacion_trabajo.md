@@ -126,4 +126,4 @@ Todas automáticas o de humo, ejecutadas el 05–06/11/2026. **Ninguna con cáma
 | Cambio | Commit |
 |---|---|
 | Interfaz Tkinter funcional | `a74bd36` (rama `feat/interfaz-funcional`) |
-| Interfaz web local y documentación | *(completar tras el commit de la rama `feat/interfaz-web`)* |
+| Interfaz web local y documentación | `0aa1bc1` (rama `feat/interfaz-web`) |
