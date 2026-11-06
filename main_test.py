@@ -7,8 +7,7 @@ import cv2
 
 from funciones.acq import SourceState, VideoSource
 from funciones.seg import ClassicSegmenter
-from funciones.track import CentroidTracker
-from funciones.track_kalman import KalmanCentroidTracker
+from funciones.tracking.track import CentroidTracker
 
 
 def preview(frame, segmenter, tracker, stats=None):
@@ -28,6 +27,10 @@ def preview(frame, segmenter, tracker, stats=None):
         cv2.circle(annotated, obj["centroid"], 4, (0, 255, 0), -1)
         cv2.putText(annotated, f'ID {obj["id"]}', (x, max(18, y - 5)),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+
+    if any(e["code"] == "ASSOCIATION_AMBIGUOUS" for e in getattr(tracker, "last_events", [])):
+        cv2.putText(annotated, "Asociacion ambigua: observaciones suspendidas", (10, 25),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 165, 255), 1)
 
     for obj in instances:
         if obj["is_valid_mask"]:
@@ -53,6 +56,10 @@ def main():
     parser.add_argument("--sin-ventanas", action="store_true", help="Procesa video sin interfaz.")
     parser.add_argument("--salida-video", type=Path, help="Video MP4 con detecciones y máscaras.")
     parser.add_argument("--resumen", type=Path, help="Resumen técnico JSON de la ejecución.")
+    parser.add_argument("--max-distance", type=float, default=80.0, help="Distancia máxima en píxeles.")
+    parser.add_argument("--max-disappeared", type=int, default=10, help="Actualizaciones ausentes toleradas.")
+    parser.add_argument("--ambiguity-margin", type=float, default=2.0,
+                        help="Margen de coste total en píxeles para alternativas ambiguas (Kalman).")
     parser.add_argument("--hsv-min", type=int, nargs=3, default=(0, 70, 50))
     parser.add_argument("--hsv-max", type=int, nargs=3, default=(179, 255, 255))
     args = parser.parse_args()
@@ -71,7 +78,14 @@ def main():
             parser.error("Cada límite HSV debe cumplir 0 <= mínimo <= máximo <= límite del canal.")
 
     segmenter = ClassicSegmenter(hsv_lower=args.hsv_min, hsv_upper=args.hsv_max)
-    tracker = KalmanCentroidTracker() if args.tracker == "kalman" else CentroidTracker()
+    if args.tracker == "kalman":
+        from funciones.tracking.track_kalman import KalmanCentroidTracker
+        tracker = KalmanCentroidTracker(max_distance=args.max_distance,
+                                       max_disappeared=args.max_disappeared,
+                                       ambiguity_margin=args.ambiguity_margin)
+    else:
+        tracker = CentroidTracker(max_distance=args.max_distance,
+                                  max_disappeared=args.max_disappeared)
     if args.foto:
         frame = cv2.imread(str(args.foto))
         if frame is None:
@@ -108,6 +122,10 @@ def main():
                 parser.exit(1, f"Fuente sin cuadros disponibles: {state.value}\n")
 
             views = preview(frame, segmenter, tracker, stats)
+            for event in getattr(tracker, "last_events", []):
+                if event["severity"] == "warning":
+                    print(json.dumps({"session_id": meta["session_id"],
+                                      "frame_idx": meta["frame_idx"], **event}))
             if args.salida_video:
                 panel = cv2.hconcat([
                     views["Detecciones"],

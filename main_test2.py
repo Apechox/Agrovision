@@ -8,8 +8,8 @@ import numpy as np
 from funciones.acq import SourceState, VideoSource
 from funciones.calib import Calibrator
 from funciones.seg import ClassicSegmenter
-from funciones.track import CentroidTracker
-from funciones.track_kalman import KalmanCentroidTracker
+from funciones.tracking.track import CentroidTracker
+from funciones.tracking.track_kalman import KalmanCentroidTracker
 
 
 def instance_mask(shape_hw, contour):

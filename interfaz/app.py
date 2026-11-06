@@ -35,7 +35,7 @@ from funciones.madurez import ColorMaturityClassifier
 from funciones.manchas import DarkSpotDetector
 from funciones.registro import SessionRegistry
 from funciones.seg import ClassicSegmenter
-from funciones.track_kalman import KalmanCentroidTracker
+from funciones.tracking.track_kalman import KalmanCentroidTracker
 
 MADUREZ_A_BARRA = {"Verde": 15, "En transición": 50, "Maduro": 90, "No evaluable": 0}
 MANCHAS_A_BARRA = {"Sin manchas": 90, "Con manchas": 20, "No evaluable": 0}
