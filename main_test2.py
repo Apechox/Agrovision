@@ -7,12 +7,9 @@ import numpy as np
 
 from funciones.acq import SourceState, VideoSource
 from funciones.calib import Calibrator
-from funciones.madurez import ColorMaturityClassifier
-from funciones.manchas import DarkSpotDetector
-from funciones.registro import SessionRegistry
 from funciones.seg import ClassicSegmenter
-from funciones.track import CentroidTracker
-from funciones.track_kalman import KalmanCentroidTracker
+from funciones.tracking.track import CentroidTracker
+from funciones.tracking.track_kalman import KalmanCentroidTracker
 
 
 def instance_mask(shape_hw, contour):
@@ -141,6 +138,14 @@ def main():
     for low, high, limit in zip(args.hsv_min, args.hsv_max, (179, 255, 255)):
         if not 0 <= low <= high <= limit:
             parser.error("Cada límite HSV debe cumplir 0 <= mínimo <= máximo <= límite del canal.")
+
+    try:
+        from funciones.madurez import ColorMaturityClassifier
+        from funciones.manchas import DarkSpotDetector
+        from funciones.registro import SessionRegistry
+    except ModuleNotFoundError as error:
+        parser.exit(1, f"Falta una dependencia del flujo ampliado: {error.name}. "
+                    "Consultar docs/pruebas_video_hito2.md.\n")
 
     segmenter = ClassicSegmenter(hsv_lower=args.hsv_min, hsv_upper=args.hsv_max)
     tracker = KalmanCentroidTracker() if args.tracker == "kalman" else CentroidTracker()

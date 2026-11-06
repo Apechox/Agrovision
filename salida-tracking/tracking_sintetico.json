@@ -1,0 +1,2049 @@
+{
+  "synthetic_only": true,
+  "source_frames": 55,
+  "unique_track_ids": [
+    1,
+    2
+  ],
+  "id_switches_in_this_fixture": 0,
+  "parameters": {
+    "max_distance": 8,
+    "max_disappeared": 2,
+    "ambiguity_margin": 2
+  },
+  "baseline": {
+    "unique_track_ids": [
+      1,
+      2,
+      3
+    ],
+    "id_switches_in_this_fixture": 1
+  },
+  "records": [
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 1,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            55,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            55,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            55,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            55,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 2,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            60,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            60,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            60,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            60,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 3,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            65,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            65,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            65,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            65,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 4,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            70,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            70,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            70,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            70,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 5,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            75,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            75,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            75,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            75,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 6,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            80,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            80,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            80,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            80,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 7,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            85,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            85,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            85,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            85,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 8,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            90,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            90,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            90,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            90,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 9,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            95,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            95,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            95,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            95,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 10,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            100,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            100,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            100,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            100,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 11,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            105,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            105,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            105,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            105,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 12,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            110,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            110,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            110,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            110,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 13,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            115,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            115,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            115,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            115,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 14,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            120,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            120,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            120,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            120,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 15,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            125,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            125,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            125,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            125,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 16,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            130,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            130,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            130,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            130,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 17,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            135,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            135,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            135,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            135,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 18,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            140,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            140,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            140,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            140,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 19,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            145,
+            190
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            145,
+            190
+          ]
+        }
+      ],
+      "events": [
+        {
+          "code": "TRACK_TEMPORARILY_LOST",
+          "severity": "info",
+          "update_index": 19,
+          "track_ids": [
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 20,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            150,
+            190
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            150,
+            190
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 21,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            155,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            155,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            155,
+            190
+          ]
+        },
+        {
+          "id": 3,
+          "centroid": [
+            155,
+            90
+          ]
+        }
+      ],
+      "events": [
+        {
+          "code": "TRACK_RECOVERED",
+          "severity": "info",
+          "update_index": 21,
+          "track_ids": [
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 22,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            160,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            160,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            160,
+            190
+          ]
+        },
+        {
+          "id": 3,
+          "centroid": [
+            160,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 23,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            165,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            165,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            165,
+            190
+          ]
+        },
+        {
+          "id": 3,
+          "centroid": [
+            165,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 24,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            170,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            170,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            170,
+            190
+          ]
+        },
+        {
+          "id": 3,
+          "centroid": [
+            170,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 25,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            175,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            175,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            175,
+            190
+          ]
+        },
+        {
+          "id": 3,
+          "centroid": [
+            175,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 26,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            180,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            180,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            180,
+            190
+          ]
+        },
+        {
+          "id": 3,
+          "centroid": [
+            180,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 27,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            185,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            185,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            185,
+            190
+          ]
+        },
+        {
+          "id": 3,
+          "centroid": [
+            185,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 28,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            190,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            190,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            190,
+            190
+          ]
+        },
+        {
+          "id": 3,
+          "centroid": [
+            190,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 29,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            195,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            195,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            195,
+            190
+          ]
+        },
+        {
+          "id": 3,
+          "centroid": [
+            195,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 30,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            200,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            200,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            200,
+            190
+          ]
+        },
+        {
+          "id": 3,
+          "centroid": [
+            200,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 31,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            205,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            205,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            205,
+            190
+          ]
+        },
+        {
+          "id": 3,
+          "centroid": [
+            205,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 32,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            210,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            210,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            210,
+            190
+          ]
+        },
+        {
+          "id": 3,
+          "centroid": [
+            210,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 33,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            215,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            215,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            215,
+            190
+          ]
+        },
+        {
+          "id": 3,
+          "centroid": [
+            215,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 34,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            220,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            220,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            220,
+            190
+          ]
+        },
+        {
+          "id": 3,
+          "centroid": [
+            220,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 35,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            225,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            225,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            225,
+            190
+          ]
+        },
+        {
+          "id": 3,
+          "centroid": [
+            225,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 36,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            230,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            230,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            230,
+            190
+          ]
+        },
+        {
+          "id": 3,
+          "centroid": [
+            230,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 37,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            235,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            235,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            235,
+            190
+          ]
+        },
+        {
+          "id": 3,
+          "centroid": [
+            235,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 38,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            240,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            240,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            240,
+            190
+          ]
+        },
+        {
+          "id": 3,
+          "centroid": [
+            240,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 39,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            245,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            245,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            245,
+            190
+          ]
+        },
+        {
+          "id": 3,
+          "centroid": [
+            245,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 40,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            250,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            250,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            250,
+            190
+          ]
+        },
+        {
+          "id": 3,
+          "centroid": [
+            250,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 41,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            255,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            255,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            255,
+            190
+          ]
+        },
+        {
+          "id": 3,
+          "centroid": [
+            255,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 42,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            260,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            260,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            260,
+            190
+          ]
+        },
+        {
+          "id": 3,
+          "centroid": [
+            260,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 43,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            265,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            265,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            265,
+            190
+          ]
+        },
+        {
+          "id": 3,
+          "centroid": [
+            265,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 44,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            270,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            270,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            270,
+            190
+          ]
+        },
+        {
+          "id": 3,
+          "centroid": [
+            270,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 45,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            275,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            275,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            275,
+            190
+          ]
+        },
+        {
+          "id": 3,
+          "centroid": [
+            275,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 46,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            280,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            280,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            280,
+            190
+          ]
+        },
+        {
+          "id": 3,
+          "centroid": [
+            280,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 47,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            285,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            285,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            285,
+            190
+          ]
+        },
+        {
+          "id": 3,
+          "centroid": [
+            285,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 48,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            290,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            290,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            290,
+            190
+          ]
+        },
+        {
+          "id": 3,
+          "centroid": [
+            290,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 49,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            295,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            295,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            295,
+            190
+          ]
+        },
+        {
+          "id": 3,
+          "centroid": [
+            295,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 50,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            300,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            300,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            300,
+            190
+          ]
+        },
+        {
+          "id": 3,
+          "centroid": [
+            300,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 51,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            305,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            305,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            305,
+            190
+          ]
+        },
+        {
+          "id": 3,
+          "centroid": [
+            305,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 52,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            310,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            310,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            310,
+            190
+          ]
+        },
+        {
+          "id": 3,
+          "centroid": [
+            310,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 53,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            315,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            315,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            315,
+            190
+          ]
+        },
+        {
+          "id": 3,
+          "centroid": [
+            315,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 54,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            320,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            320,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            320,
+            190
+          ]
+        },
+        {
+          "id": 3,
+          "centroid": [
+            320,
+            90
+          ]
+        }
+      ],
+      "events": []
+    },
+    {
+      "session_id": "SINTETICA_HITO2",
+      "frame_idx": 55,
+      "observations": [
+        {
+          "id": 1,
+          "centroid": [
+            325,
+            190
+          ]
+        },
+        {
+          "id": 2,
+          "centroid": [
+            325,
+            90
+          ]
+        }
+      ],
+      "baseline_observations": [
+        {
+          "id": 1,
+          "centroid": [
+            325,
+            190
+          ]
+        },
+        {
+          "id": 3,
+          "centroid": [
+            325,
+            90
+          ]
+        }
+      ],
+      "events": []
+    }
+  ]
+}

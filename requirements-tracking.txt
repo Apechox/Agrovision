@@ -1,0 +1,5 @@
+# Entorno comprobado en Windows / Python 3.14 para tracking y main_test.py.
+# La interfaz y YOLO requieren otras dependencias y módulos del equipo.
+opencv-python==5.0.0.93
+numpy==2.5.4
+scipy==1.18.1

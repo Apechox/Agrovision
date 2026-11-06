@@ -1,4 +1,7 @@
 __pycache__
+.venv/
+salidas/
+
 labels.cache
 runs
 yolo11n.pt

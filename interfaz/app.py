@@ -28,14 +28,14 @@ from tkinter import filedialog, messagebox, ttk
 import cv2
 from PIL import Image, ImageTk
 
-import main_test as pipeline  # reutiliza evaluate_instances / build_row / annotate
+import main_test2 as pipeline  # reutiliza evaluate_instances / build_row / annotate
 from funciones.acq import SourceState, VideoSource
 from funciones.calib import Calibrator
 from funciones.madurez import ColorMaturityClassifier
 from funciones.manchas import DarkSpotDetector
 from funciones.registro import SessionRegistry
 from funciones.seg import ClassicSegmenter
-from funciones.track_kalman import KalmanCentroidTracker
+from funciones.tracking.track_kalman import KalmanCentroidTracker
 
 MADUREZ_A_BARRA = {"Verde": 15, "En transición": 50, "Maduro": 90, "No evaluable": 0}
 MANCHAS_A_BARRA = {"Sin manchas": 90, "Con manchas": 20, "No evaluable": 0}
