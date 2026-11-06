@@ -75,26 +75,13 @@
   function estadistica(valores) {
     const n = valores.length;
     if (!n) return { n: 0 };
-    const media = valores.reduce((a, b) => a + b, 0) / n;
-    const desv = n > 1 ? Math.sqrt(valores.reduce((a, b) => a + (b - media) ** 2, 0) / (n - 1)) : 0;
-    return { n, media, min: Math.min(...valores), max: Math.max(...valores), desv };
+    return { n, media: valores.reduce((a, b) => a + b, 0) / n, min: Math.min(...valores), max: Math.max(...valores) };
   }
 
   function contar(filas, campo) {
     const m = {};
     filas.forEach((f) => { if (f[campo]) m[f[campo]] = (m[f[campo]] || 0) + 1; });
     return m;
-  }
-
-  function histograma(valores, tramos = 8) {
-    if (!valores.length) return [];
-    const min = Math.min(...valores), max = Math.max(...valores);
-    const ancho = Math.max(1, Math.ceil((max - min) / tramos));
-    const desde = Math.floor(min / ancho) * ancho;
-    const cajas = Math.floor((max - desde) / ancho) + 1;
-    const res = Array.from({ length: cajas }, (_, i) => ({ desde: desde + i * ancho, hasta: desde + (i + 1) * ancho, n: 0 }));
-    valores.forEach((v) => { res[Math.min(Math.floor((v - desde) / ancho), cajas - 1)].n++; });
-    return res;
   }
 
   function resumenPorArchivo(filas) {
@@ -114,9 +101,9 @@
     const anchos = definitivas.map((f) => f.ancho_mm).filter((v) => v !== null);
     return {
       visibles, definitivas, provisionales: visibles.length - definitivas.length,
-      ancho: estadistica(anchos), histograma: histograma(anchos),
+      ancho: estadistica(anchos),
       calibre: contar(definitivas, 'calibre'), madurez: contar(definitivas, 'madurez'),
-      manchas: contar(definitivas, 'manchas'), estados: contar(visibles, 'estado'),
+      manchas: contar(definitivas, 'manchas'),
       porArchivo: resumenPorArchivo(definitivas),
       estimadas: definitivas.some((f) => /estimad/i.test(f.estado_calibre)),
     };
@@ -127,18 +114,6 @@
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const f1 = (v) => (v === null || v === undefined ? '—' : Number(v).toFixed(1).replace('.', ','));
   const ORDEN_CALIBRE = ['Pequeño', 'Mediano', 'Grande'];
-
-  function barras(titulo, datos, vacio, orden) {
-    const total = Object.values(datos).reduce((a, b) => a + b, 0);
-    const claves = Object.keys(datos).sort((a, b) => {
-      const ia = orden ? orden.indexOf(a) : -1, ib = orden ? orden.indexOf(b) : -1;
-      return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || datos[b] - datos[a];
-    });
-    const filas = total ? claves.map((k) =>
-      `<div class="barra-fila"><span>${esc(k)}</span><div class="barra-pista"><div class="barra-valor" style="width:${(datos[k] / total) * 100}%"></div></div>` +
-      `<span>${datos[k]} (${Math.round((datos[k] / total) * 100)}%)</span></div>`).join('') : `<p class="chico">${esc(vacio)}</p>`;
-    return `<div class="grafica"><h3>${esc(titulo)}</h3>${filas}</div>`;
-  }
 
   // Donut como en la sección 6.2.2 del documento. Paleta azul ordinal validada (claro y oscuro):
   // la categoría que el documento lista primero toma el tono más marcado. Los porcentajes van
@@ -187,22 +162,13 @@
       `<svg viewBox="0 0 42 42" class="don" role="img" aria-label="${esc(titulo)}">${arcos}${centro}</svg>${leyenda}</div>`;
   }
 
-  function dibujarHistograma(h) {
-    if (!h.length) return '<div class="grafica"><h3>Distribución del ancho (mm)</h3><p class="chico">Sin datos</p></div>';
-    const tope = Math.max(...h.map((c) => c.n));
-    const cols = h.map((c) => `<div class="hist-col" title="${c.desde}–${c.hasta} mm: ${c.n}">` +
-      `<span class="hist-n">${c.n || ''}</span><div class="hist-barra" style="height:${(c.n / tope) * 100}%"></div>` +
-      `<span class="hist-x">${c.desde}</span></div>`).join('');
-    return `<div class="grafica"><h3>Distribución del ancho (mm)</h3><div class="hist">${cols}</div>` +
-      `<p class="chico">Cada barra agrupa ${h[0].hasta - h[0].desde} mm; el número bajo la barra es su inicio.</p></div>`;
-  }
-
-  function dibujarKpis(r, filas) {
+  // Indicadores a la izquierda, bajo los donuts: totales arriba y el rango del ancho abajo.
+  function dibujarKpis(r) {
     const a = r.ancho, archivos = new Set(r.definitivas.map((f) => f.fuente)).size;
     const k = (t, v) => `<div class="kpi"><b>${v}</b><span>${esc(t)}</span></div>`;
-    return k('Tomates definitivos', r.definitivas.length) + k('Ancho medio (mm)', a.n ? f1(a.media) : '—') +
-      k('Mínimo (mm)', a.n ? f1(a.min) : '—') + k('Máximo (mm)', a.n ? f1(a.max) : '—') +
-      k('Desv. estándar (mm)', a.n ? f1(a.desv) : '—') + k('Archivos', archivos);
+    return `<div class="kpi-fila f2">${k('Tomates totales', r.definitivas.length)}${k('Archivos', archivos)}</div>` +
+      `<div class="kpi-fila f3">${k('Ancho mín. (mm)', a.n ? f1(a.min) : '—')}${k('Ancho medio (mm)', a.n ? f1(a.media) : '—')}` +
+      `${k('Ancho máx. (mm)', a.n ? f1(a.max) : '—')}</div>`;
   }
 
   function dibujarTabla(filas) {
@@ -231,7 +197,7 @@
     const frutos = [...new Set(filas.map((f) => base(f.tipo)).filter(Boolean))];
     llenar($('#dash-f-fruto'), frutos, est.fruto, frutos.length > 1 ? 'Todos' : null);  // un solo fruto: "Fruto: Tomate"
     est.archivo = $('#dash-f-archivo').value; est.fruto = $('#dash-f-fruto').value;
-    $('#dash-nombre').textContent = est.csv ? `CSV cargado: ${est.csv.nombre} (${est.csv.filas.length} filas)` : 'Ningún CSV cargado';
+    $('#dash-nombre').textContent = est.csv ? `CSV cargado: ${est.csv.nombre} (${est.csv.filas.length} filas)` : '';
 
     if (!filas.length) {
       $('#titulo-dash').textContent = est.origen === 'csv'
@@ -250,10 +216,8 @@
       donut('Calidad Visual', r.manchas, 'Sin datos: módulo A3.2 pendiente', ORDEN_CALIDAD) +
       donut('Calibre Aparente', r.calibre, 'Sin datos', ORDEN_CALIBRE);
     $('#dash-total').textContent = `Total de frutos analizados: ${r.definitivas.length}`;
-    $('#dash-kpi').innerHTML = dibujarKpis(r, filas);
+    $('#dash-kpi').innerHTML = dibujarKpis(r);
     $('#graficas').innerHTML =
-      dibujarHistograma(r.histograma) +
-      barras('Estado del registro', r.estados, 'Sin datos') +
       dibujarTabla(r.porArchivo) +
       '<p class="chico">Los cortes de calibre (55 y 70 mm) son provisionales hasta que el equipo defina los oficiales.</p>';
   }
@@ -278,6 +242,6 @@
     $('#dash-f-fruto').addEventListener('change', (e) => { est.fruto = e.target.value; pintar(); });
   }
 
-  global.Dash = { iniciar, pintar, setSesion: (registro) => { est.actual = desdeSesion(registro); }, leerCSV, calcular, histograma };
+  global.Dash = { iniciar, pintar, setSesion: (registro) => { est.actual = desdeSesion(registro); }, leerCSV, calcular };
   if (typeof module !== 'undefined') module.exports = global.Dash;
 })(typeof window !== 'undefined' ? window : globalThis);

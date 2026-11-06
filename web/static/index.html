@@ -5,11 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>AgroVision</title>
   <link rel="stylesheet" href="/style.css">
+  <script>  /* aplica el tema guardado antes de pintar, para que no parpadee */
+    try { var t = localStorage.getItem('agrovision.tema'); if (t) document.documentElement.dataset.tema = t; } catch (e) { /* sin almacenamiento */ }
+  </script>
 </head>
 <body>
 <header class="barra">
   <div class="marca"><span class="logo" aria-hidden="true">🍅</span>
-    <div><h1>AgroVision</h1><p>Inspección visual de tomates · TEL328</p></div></div>
+    <div><h1>AgroVision</h1><p>Para la inspección visual de tomates</p></div></div>
   <label class="interruptor" title="Muestra las etapas intermedias, el esquema del flujo y la explicación del pipeline">
     <input type="checkbox" id="modo-did"> <span>Modo didáctico</span>
   </label>
@@ -53,6 +56,11 @@
           <button id="btn-hsv-reset" class="sec">Restablecer valores por defecto</button>
           <span id="hsv-nota" class="chico"></span>
         </div>
+      </details>
+      <details class="submenu">
+        <summary>Temas</summary>
+        <p class="explica">Paletas inspiradas en frutas. El tema se aplica a toda la interfaz y al dashboard, y se recuerda en este navegador.</p>
+        <div class="temas" id="temas" role="radiogroup" aria-label="Tema de color"></div>
       </details>
     </details>
 
@@ -142,10 +150,10 @@
 </main>
 
 <!-- ============ Dashboard: vista de ancho completo (sección 6.2.2 del documento) ============ -->
-<section id="vista-dash" class="dash-pagina" hidden aria-label="Dashboard de análisis">
+<section id="vista-dash" class="dash-pagina" hidden aria-label="Dashboard">
   <div class="dash-cab">
     <button id="dash-salir" class="sec"><kbd>Esc</kbd> ← Salir</button>
-    <div class="dash-titulo"><h2>AgroVision</h2><p>Dashboard de análisis</p></div>
+    <div class="dash-titulo"><h2>Dashboard</h2></div>
     <div class="dash-controles">
       <label><input type="radio" name="dash-origen" value="sesion" checked> Sesión actual</label>
       <label><input type="radio" name="dash-origen" value="csv"> Archivo CSV</label>
@@ -164,10 +172,13 @@
     <div id="dash-total" class="dash-total"></div>
   </div>
 
-  <h3 class="dash-sub">Más indicadores</h3>
-  <div id="dash-kpi" class="kpis"></div>
-  <div id="graficas" class="graficas"></div>
+  <div class="dash-abajo">
+    <div id="dash-kpi" class="kpis-izq"></div>
+    <div id="graficas" class="graficas"></div>
+  </div>
 </section>
+
+<footer class="pie">Proyecto iniciado para el curso de TEL328</footer>
 
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 <script src="/dashboard.js"></script>

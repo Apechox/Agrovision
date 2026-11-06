@@ -114,6 +114,30 @@ function aplicarModoDidactico(activo, guardar = true) {
 }
 $('#modo-did').addEventListener('change', (e) => aplicarModoDidactico(e.target.checked));
 
+// ---------- temas de color (Ajustes > Temas) ----------
+const TEMAS = [
+  { id: '', nombre: 'Default', desc: 'El verde de siempre', colores: ['#2f7d32', '#1f5fa8', '#f8faf7'] },
+  { id: 'tomate', nombre: 'Tomate', desc: 'Rojos y verdes', colores: ['#c0392b', '#2e7d32', '#ee9f93'] },
+  { id: 'platano', nombre: 'Plátano', desc: 'Amarillos y marrones', colores: ['#e0b13a', '#8f6a00', '#fdf0b8'] },
+];
+function aplicarTema(id, guardar = true) {
+  if (id) document.documentElement.dataset.tema = id; else delete document.documentElement.dataset.tema;
+  document.querySelectorAll('.tema').forEach((t) => {
+    const activo = t.dataset.tema === id; t.classList.toggle('sel', activo); t.querySelector('input').checked = activo;
+  });
+  if (guardar) { try { localStorage.setItem('agrovision.tema', id); } catch (e) { /* sin almacenamiento */ } }
+}
+$('#temas').innerHTML = TEMAS.map((t) =>
+  `<label class="tema" data-tema="${t.id}"><input type="radio" name="tema" value="${t.id}">` +
+  `<span class="muestras">${t.colores.map((c) => `<i style="background:${c}"></i>`).join('')}</span>` +
+  `<b>${esc(t.nombre)}</b><small>${esc(t.desc)}</small></label>`).join('');
+$('#temas').addEventListener('change', (e) => aplicarTema(e.target.value));
+{
+  let guardado = '';
+  try { guardado = localStorage.getItem('agrovision.tema') || ''; } catch (e) { /* sin almacenamiento */ }
+  aplicarTema(TEMAS.some((t) => t.id === guardado) ? guardado : '', false);
+}
+
 // ---------- paneles de resultados ----------
 let panel = 'p-actual';
 function elegirPanel(id) {

@@ -82,7 +82,7 @@ button.paso:hover, button.paso.sel { border-color: var(--prim); }
   display: grid; place-items: center; min-height: 260px; }
 .visor img { width: 100%; max-height: 62vh; object-fit: contain; display: block; }
 .roi { position: absolute; box-sizing: border-box; border: 2px solid var(--info); cursor: move;
-  background: rgba(31, 95, 168, .14); touch-action: none; }
+  background: color-mix(in srgb, var(--info) 14%, transparent); touch-action: none; }
 .roi[hidden] { display: none; }
 .roi i { position: absolute; width: 14px; height: 14px; box-sizing: border-box; background: #fff;
   border: 2px solid var(--info); border-radius: 3px; touch-action: none; margin: -7px 0 0 -7px; }
@@ -178,8 +178,13 @@ tr.aviso td { color: var(--aviso); font-weight: 600; }
 .don-val { font-weight: 600; } .don-val small { color: var(--suave); font-weight: 400; }
 .dash-pie { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
 .dash-fruto { font-weight: 600; display: inline-flex; align-items: center; gap: 8px; }
-.dash-total { background: #1f3a63; color: #fff; font-weight: 700; padding: 10px 18px; border-radius: 8px; }
-.dash-sub { font-size: 14px; margin: 20px 0 4px; color: var(--suave); }
+.dash-total { background: var(--dash-total, #1f3a63); color: #fff; font-weight: 700; padding: 10px 18px; border-radius: 8px; }
+.dash-abajo { display: grid; grid-template-columns: minmax(320px, 5fr) 7fr; gap: 16px; margin-top: 16px; align-items: start; }
+@media (max-width: 860px) { .dash-abajo { grid-template-columns: 1fr; } }
+.kpis-izq { display: grid; gap: 10px; }
+.kpi-fila { display: grid; gap: 10px; }
+.kpi-fila.f2 { grid-template-columns: repeat(2, 1fr); } .kpi-fila.f3 { grid-template-columns: repeat(3, 1fr); }
+.kpis-izq .kpi { background: var(--tarjeta); }
 .dash-pagina .graficas { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); align-items: start; }
 .dash-pagina .grafica { background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 12px; padding: 14px; }
 /* dashboard (indicadores) */
@@ -187,14 +192,60 @@ tr.aviso td { color: var(--aviso); font-weight: 600; }
 .dash-origen label, .dash-filtros label { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
 .dash-filtros select { padding: 4px 6px; border-radius: 6px; border: 1px solid var(--borde);
   background: var(--tarjeta); color: var(--texto); max-width: 180px; }
-.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; margin-top: 8px; }
 .kpi { border: 1px solid var(--borde); border-radius: 8px; padding: 8px 10px; background: var(--tabla-alt); }
 .kpi b { display: block; font-size: 20px; } .kpi span { color: var(--suave); font-size: 12px; }
-.hist { display: flex; align-items: flex-end; gap: 4px; height: 130px; padding-top: 16px; }
-.hist-col { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center;
-  min-width: 0; }
-.hist-barra { width: 100%; background: var(--prim); border-radius: 3px 3px 0 0; min-height: 0; }
-.hist-n { font-size: 11px; color: var(--suave); } .hist-x { font-size: 11px; color: var(--suave); margin-top: 3px; }
 .toast { position: fixed; right: 16px; bottom: 16px; max-width: 360px; padding: 10px 14px;
   border-radius: 8px; background: var(--texto); color: var(--fondo); font-size: 14px; z-index: 5; }
 .toast.error { background: var(--aviso); color: #fff; }
+
+/* ---------- estructura de página y pie ---------- */
+body { min-height: 100vh; display: flex; flex-direction: column; }
+.rejilla, .dash-pagina { width: 100%; }
+.pie { margin-top: auto; border-top: 1px solid var(--borde); padding: 14px 20px; color: var(--suave); font-size: 13px; }
+
+/* ---------- temas inspirados en frutas ----------
+   Sobrescriben las variables del tema por defecto (también las del dashboard). Cada uno tiene su
+   versión clara y oscura. Los textos cumplen contraste >= 4,5:1 y las rampas de los donuts pasaron
+   el validador de paletas ordinales en ambos modos. */
+:root { --dash-total: #1f3a63; }
+:root[data-tema="tomate"] {
+  --fondo: #fbf5f3; --tarjeta: #ffffff; --texto: #2a1a18; --suave: #7a5a55; --borde: #ead9d5;
+  --prim: #c0392b; --prim-texto: #ffffff; --aviso: #a85a00; --aviso-fondo: #fff1e0;
+  --ok: #2e7d32; --info: #2e7d32; --tabla-alt: #fdf7f5; --visor: #1f1514;
+  --d1: #8b1a10; --d2: #c0392b; --d3: #e0705f; --d4: #ee9f93; --dn: #898781;
+  --dt1: #ffffff; --dt2: #ffffff; --dt3: #0b0b0b; --dt4: #0b0b0b; --dtn: #0b0b0b; --dash-total: #8b1a10;
+}
+:root[data-tema="platano"] {
+  --fondo: #fdf8e6; --tarjeta: #fffdf5; --texto: #2b2410; --suave: #7a6a35; --borde: #eadfb4;
+  --prim: #8f6a00; --prim-texto: #ffffff; --aviso: #a35a00; --aviso-fondo: #fff0d1;
+  --ok: #5f7a1f; --info: #8a5a12; --tabla-alt: #fcf6e0; --visor: #1d1a10;
+  --d1: #6b4a00; --d2: #a67300; --d3: #c99100; --d4: #dcae2c; --dn: #898781;
+  --dt1: #ffffff; --dt2: #0b0b0b; --dt3: #0b0b0b; --dt4: #0b0b0b; --dtn: #0b0b0b; --dash-total: #6b4a00;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-tema="tomate"]:not([data-theme="light"]) {
+    --fondo: #1a1110; --tarjeta: #241716; --texto: #f3e6e3; --suave: #c4a39d; --borde: #3b2826;
+    --prim: #ef5350; --prim-texto: #1a0a09; --aviso: #ffb15c; --aviso-fondo: #3a2a14;
+    --ok: #81c784; --info: #81c784; --tabla-alt: #2a1b1a; --visor: #0f0909;
+    --d1: #f2a99f; --d2: #e57366; --d3: #c0392b; --d4: #9c2f24; --dn: #898781;
+    --dt1: #0b0b0b; --dt2: #0b0b0b; --dt3: #ffffff; --dt4: #ffffff; --dtn: #0b0b0b; --dash-total: #9c2f24;
+  }
+  :root[data-tema="platano"]:not([data-theme="light"]) {
+    --fondo: #17140a; --tarjeta: #211d0f; --texto: #f6efd2; --suave: #c9b977; --borde: #3a3317;
+    --prim: #f2c315; --prim-texto: #2b2410; --aviso: #ffb15c; --aviso-fondo: #3a2a14;
+    --ok: #b7d36b; --info: #e0b94a; --tabla-alt: #271f10; --visor: #0e0c06;
+    --d1: #f5d768; --d2: #e0b13a; --d3: #b98a1c; --d4: #8a6510; --dn: #898781;
+    --dt1: #0b0b0b; --dt2: #0b0b0b; --dt3: #0b0b0b; --dt4: #ffffff; --dtn: #0b0b0b; --dash-total: #8a6510;
+  }
+}
+
+/* selector de temas (Ajustes > Temas) */
+.temas { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 8px; }
+.tema { position: relative; display: grid; gap: 6px; padding: 10px; border: 2px solid var(--borde); border-radius: 10px;
+  cursor: pointer; background: var(--tarjeta); }
+.tema.sel { border-color: var(--prim); }
+.tema input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+.tema:focus-within { outline: 2px solid var(--info); outline-offset: 2px; }
+.tema .muestras { display: flex; gap: 4px; }
+.tema .muestras i { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--borde); }
+.tema b { font-size: 14px; } .tema small { color: var(--suave); font-size: 12px; }
