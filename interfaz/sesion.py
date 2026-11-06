@@ -59,6 +59,32 @@ def _fila_excel(fila):
     }
 
 
+def exportar_sesiones(sesiones, ruta, formato="excel"):
+    """Escribe en un solo CSV las filas de varias sesiones (una por archivo de la cola).
+    formato='excel': separador ';', coma decimal, columnas legibles (Excel en español).
+    formato='datos': separador ',', punto decimal, nombres técnicos (para programas)."""
+    ruta = Path(ruta)
+    filas = [f for s in sesiones for _, f in sorted(s.filas.items())]
+    try:
+        ruta.parent.mkdir(parents=True, exist_ok=True)
+        with open(ruta, "w", newline="", encoding="utf-8-sig") as f:
+            if formato == "excel":
+                escritor = csv.DictWriter(f, fieldnames=CAMPOS_EXCEL, delimiter=";")
+                escritor.writeheader()
+                for fila in filas:
+                    escritor.writerow(_fila_excel(fila))
+            else:
+                escritor = csv.DictWriter(f, fieldnames=CAMPOS, extrasaction="ignore")
+                escritor.writeheader()
+                for fila in filas:
+                    escritor.writerow(fila)
+    except OSError as exc:
+        return False, f"No se pudo escribir {ruta}: {exc}"
+    for s in sesiones:
+        s.version_guardada = s.version
+    return True, f"{len(filas)} registro(s) guardados en {ruta}"
+
+
 class SesionRegistro:
     def __init__(self, id_sesion, fuente, version_calibracion):
         self.id_sesion = id_sesion
@@ -119,23 +145,4 @@ class SesionRegistro:
         return [f for f in self.filas.values() if f["estado_registro"] != PROVISIONAL]
 
     def exportar_csv(self, ruta, formato="excel"):
-        """formato='excel': separador ';', coma decimal, columnas legibles (Excel en español).
-        formato='datos': separador ',', punto decimal, nombres técnicos (para programas)."""
-        ruta = Path(ruta)
-        try:
-            ruta.parent.mkdir(parents=True, exist_ok=True)
-            with open(ruta, "w", newline="", encoding="utf-8-sig") as f:
-                if formato == "excel":
-                    escritor = csv.DictWriter(f, fieldnames=CAMPOS_EXCEL, delimiter=";")
-                    escritor.writeheader()
-                    for _, fila in sorted(self.filas.items()):
-                        escritor.writerow(_fila_excel(fila))
-                else:
-                    escritor = csv.DictWriter(f, fieldnames=CAMPOS, extrasaction="ignore")
-                    escritor.writeheader()
-                    for _, fila in sorted(self.filas.items()):
-                        escritor.writerow(fila)
-        except OSError as exc:
-            return False, f"No se pudo escribir {ruta}: {exc}"
-        self.version_guardada = self.version
-        return True, f"{len(self.filas)} registro(s) guardados en {ruta}"
+        return exportar_sesiones([self], ruta, formato)

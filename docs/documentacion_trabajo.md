@@ -112,7 +112,7 @@ Todas automáticas o de humo, ejecutadas el 05–06/11/2026. **Ninguna con cáma
 3. Cortes de calibre 55/70 mm provisionales (A3.3).
 4. La medida usa el ancho de la caja delimitadora; con tomates rotados o tocándose puede sobreestimar.
 5. En la web, el navegador tarda ~1 s en reflejar un cambio de vista.
-6. **Los videos reales aún no dan medidas válidas.** `config/calib.json` (`px_per_mm = 8.5`, zona `[50, 50, 540, 380]`) no corresponde a estas grabaciones: son verticales de 464×832 px, la zona de medición se sale del ancho del cuadro y los anchos salen entre 6 y 12 mm (un tomate real mide ~60 mm). Hace falta calibrar con el patrón físico (T2.5.1) y ajustar los umbrales HSV (los sliders sirven para eso). También se observaron saltos de ID (1, 3, 6, 8…), que conviene revisar con el responsable del seguimiento.
+6. **Los videos reales aún no dan medidas válidas.** `config/calib.json` (`px_per_mm = 8.5`, zona `[50, 50, 540, 380]`) no corresponde a estas grabaciones: son verticales de 464×832 px, esa zona se sale del ancho del cuadro (la web mide por defecto sobre el cuadro completo y la zona se ajusta arrastrándola) y los anchos salen entre 6 y 12 mm (un tomate real mide ~60 mm). Hace falta calibrar con el patrón físico (T2.5.1) y ajustar los umbrales HSV (los sliders sirven para eso). También se observaron saltos de ID (1, 3, 6, 8…), que conviene revisar con el responsable del seguimiento.
 7. Los umbrales HSV de los sliders no se guardan en `config/`; se pierden al recargar la página (RF10 pendiente).
 
 ## 8. Texto propuesto para el documento de diseño

@@ -9,14 +9,17 @@ Rutas:
     GET  /video?vista=...        video MJPEG: detecciones | mascara | limpia
     GET  /api/estado             estado, observaciones, registro e incidencias (JSON)
     GET  /api/dashboard          conteos para las gráficas (JSON)
-    GET  /api/registro.csv       descarga el CSV de la sesión
+    GET  /api/registro.csv       CSV de toda la cola; ?formato=excel (por defecto) | datos
+    (cada POST /api/fuente/archivo agrega un archivo a la cola)
     GET  /api/vista.png          descarga la última vista anotada
     POST /api/fuente/archivo     cuerpo = archivo crudo; ?nombre=video.mp4
     POST /api/fuente/camara      ?n=0
     POST /api/fuente/muestra     usa la foto de ejemplo del dataset
     POST /api/hsv                cuerpo JSON {"min":[h,s,v],"max":[h,s,v]}
     POST /api/roi                cuerpo JSON {"x":..,"y":..,"w":..,"h":..} (zona de medición, px)
-    POST /api/iniciar | /api/detener | /api/repetir
+                                 o {"completa": true} para volver al cuadro completo
+    POST /api/cola/quitar?i=     quita el archivo i de la cola | /api/cola/vaciar vacía la cola
+    POST /api/cola/mover?de=&a=  cambia el orden de análisis (solo archivos en espera)    POST /api/iniciar | /api/detener | /api/repetir
 
 Seguridad: escucha SOLO en 127.0.0.1 y rechaza peticiones con cabecera Origin ajena
 (evita que otra página abierta en tu navegador dispare acciones sobre la cámara).
@@ -190,9 +193,23 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 largo = min(int(self.headers.get("Content-Length", "0")), 4096)
                 d = json.loads(self.rfile.read(largo) or b"{}")
+                if d.get("completa"):
+                    return self._accion(m.restablecer_roi())
                 return self._accion(m.fijar_roi(d["x"], d["y"], d["w"], d["h"]))
-            except (ValueError, KeyError, TypeError):
-                return self._accion((False, "Cuerpo inválido: se espera {x, y, w, h}"))
+            except (ValueError, KeyError, TypeError, AttributeError):
+                return self._accion((False, "Cuerpo inválido: se espera {x, y, w, h} o {completa: true}"))
+        if url.path == "/api/cola/quitar":
+            try:
+                return self._accion(m.quitar(int(consulta.get("i", [""])[0])))
+            except ValueError:
+                return self._accion((False, "Posición inválida"))
+        if url.path == "/api/cola/mover":
+            try:
+                return self._accion(m.mover(int(consulta.get("de", [""])[0]), int(consulta.get("a", [""])[0])))
+            except ValueError:
+                return self._accion((False, "Posiciones inválidas"))
+        if url.path == "/api/cola/vaciar":
+            return self._accion(m.vaciar())
         return self._json({"ok": False, "mensaje": "No encontrado"}, 404)
 
     def _subida(self, nombre):
@@ -204,7 +221,7 @@ class Handler(BaseHTTPRequestHandler):
             return self._accion((False, "Falta el archivo"))
         if largo > MAX_SUBIDA:
             return self._accion((False, "Archivo demasiado grande (máx. 500 MB)"))
-        destino = self.motor.carpeta_tmp / ("fuente" + Path(nombre).suffix.lower())
+        destino = self.motor.ruta_subida(nombre)
         restante = largo
         try:
             with open(destino, "wb") as f:

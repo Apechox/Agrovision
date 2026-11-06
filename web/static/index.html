@@ -13,7 +13,7 @@
 </header>
 
 <main class="rejilla">
-  <!-- ============ Columna izquierda: video + pipeline ============ -->
+  <!-- ============ Columna izquierda: video + ajustes + pipeline ============ -->
   <section class="col-izq">
     <div class="tarjeta">
       <div class="tabs" role="tablist" aria-label="Vista del procesamiento">
@@ -33,32 +33,25 @@
       </div>
       <div class="fila">
         <span id="roi-txt" class="chico">Zona de medición: aparece sobre la imagen cuando hay un cuadro</span>
-        <button id="btn-roi-reset" class="sec">Restablecer zona</button>
+        <button id="btn-roi-reset" class="sec" title="Vuelve a medir sobre todo el cuadro">Restablecer zona</button>
       </div>
       <p id="explica" class="explica"></p>
     </div>
 
-    <div class="tarjeta">
-      <div class="fila botones">
-        <button id="btn-iniciar" class="prim"><kbd>W</kbd> Iniciar</button>
-        <button id="btn-detener" class="sec"><kbd>S</kbd> Detener</button>
-        <button id="btn-guardar" class="sec"><kbd>E</kbd> Guardar</button>
-        <button id="btn-datos" class="sec" title="CSV con coma y nombres técnicos, para programas (Python, etc.)">CSV para programas</button>
-        <button id="btn-repetir" class="sec"><kbd>R</kbd> Repetir</button>
-      </div>
-    </div>
-
-    <div class="tarjeta">
-      <h2>Ajusta la segmentación (HSV)</h2>
-      <p class="explica">Mueve los límites y mira cómo cambia la <b>máscara</b> (pestaña 2a). H = tono de color,
-        S = saturación, V = brillo. Con una imagen cargada verás una vista previa; para registrar con estos
-        valores presiona <b>Iniciar</b>. Con video, el cambio se aplica en caliente.</p>
-      <div class="sliders" id="sliders"></div>
-      <div class="fila">
-        <button id="btn-hsv-reset" class="sec">Restablecer valores por defecto</button>
-        <span id="hsv-nota" class="chico"></span>
-      </div>
-    </div>
+    <details class="tarjeta menu">
+      <summary>Ajustes</summary>
+      <details class="submenu">
+        <summary>HSV</summary>
+        <p class="explica">Mueve los límites y mira cómo cambia la <b>máscara</b> (pestaña 2a). H = tono de color,
+          S = saturación, V = brillo. Con una imagen cargada verás una vista previa; para registrar con estos
+          valores presiona <b>Iniciar</b>. Con video, el cambio se aplica en caliente.</p>
+        <div class="sliders" id="sliders"></div>
+        <div class="fila">
+          <button id="btn-hsv-reset" class="sec">Restablecer valores por defecto</button>
+          <span id="hsv-nota" class="chico"></span>
+        </div>
+      </details>
+    </details>
 
     <div class="tarjeta">
       <h2>Pipeline: ¿qué pasa con cada cuadro?</h2>
@@ -67,20 +60,36 @@
     </div>
   </section>
 
-  <!-- ============ Columna derecha: control + resultados ============ -->
+  <!-- ============ Columna derecha: control + fuente + resultados ============ -->
   <section class="col-der">
+    <div class="tarjeta">
+      <div class="fila botones">
+        <button id="btn-iniciar" class="prim"><kbd>W</kbd> Iniciar</button>
+        <button id="btn-detener" class="sec"><kbd>S</kbd> Detener</button>
+        <button id="btn-guardar" class="sec" title="Guarda el CSV para Excel, el CSV para programas y la vista anotada"><kbd>E</kbd> Guardar</button>
+        <button id="btn-repetir" class="sec" title="Descarta los resultados y vuelve a poner toda la cola en espera"><kbd>R</kbd> Repetir</button>
+      </div>
+    </div>
+
     <div class="tarjeta">
       <h2>Fuente</h2>
       <div id="zona" class="zona" tabindex="0">
-        <strong>Arrastra una imagen o video aquí</strong>
-        <span>o presiona <kbd>Q</kbd> para elegir un archivo</span>
-        <input id="archivo" type="file" accept=".png,.jpg,.jpeg,.bmp,.mp4,.avi,.mov,.mkv" hidden>
+        <strong>Arrastra imágenes o videos aquí</strong>
+        <span>o presiona <kbd>Q</kbd> para elegir archivos (puedes elegir varios)</span>
+        <input id="archivo" type="file" accept=".png,.jpg,.jpeg,.bmp,.mp4,.avi,.mov,.mkv" multiple hidden>
       </div>
       <div class="fila">
-        <button id="btn-muestra" class="sec">Usar foto de ejemplo</button>
+        <button id="btn-muestra" class="sec">Agregar foto de ejemplo</button>
         <label class="camara">Cámara n°
           <input id="camara-n" type="number" min="0" max="9" value="0"></label>
         <button id="btn-camara" class="sec">Usar cámara</button>
+      </div>
+      <div id="cola-caja" hidden>
+        <div class="fila cola-cab">
+          <b id="cola-titulo">Cola</b>
+          <button id="btn-vaciar" class="sec chico-btn">Vaciar cola</button>
+        </div>
+        <ol id="cola" class="cola"></ol>
       </div>
       <div class="estado-fuente">
         <span id="pill" class="pill pill-espera">● Esperando fuente</span>
@@ -108,7 +117,7 @@
       <div id="p-registro" class="panel" hidden>
         <p id="titulo-registro" class="chico">Una fila por tomate (por ID), no por cuadro.</p>
         <div class="tabla-caja"><table>
-          <thead><tr><th>ID</th><th>Cuadro</th><th>Ancho mm</th><th>Calibre</th><th>Estado del registro</th></tr></thead>
+          <thead><tr><th>Archivo</th><th>ID</th><th>Cuadro</th><th>Ancho mm</th><th>Calibre</th><th>Estado del registro</th></tr></thead>
           <tbody id="t-registro"></tbody></table></div>
       </div>
 

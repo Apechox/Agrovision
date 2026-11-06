@@ -111,10 +111,10 @@ function render(s) {
 
   recibirRoi(s.roi);
 
-  $('#btn-iniciar').disabled = !s.fuente || s.ocupado;
+  $('#btn-iniciar').disabled = !s.cola.some((c) => c.estado === 'En espera') || s.ocupado;
   $('#btn-detener').disabled = !s.ocupado;
   $('#btn-guardar').disabled = !s.puede_guardar;
-  $('#btn-datos').disabled = !s.puede_guardar;
+  pintarCola(s);
 
   $('#titulo-actual').textContent = s.interrumpida
     ? '⚠ Últimos resultados — anteriores a la interrupción de la fuente'
@@ -126,15 +126,58 @@ function render(s) {
   $('#estado-calibre').textContent = conMedida ? `Calibre: ${conMedida.estado_calibre}` : (s.calibracion ? `Calibración: ${s.calibracion}` : '');
 
   const prov = s.registro.filter((r) => r.estado_registro === 'Provisional').length;
-  $('#titulo-registro').textContent = `${s.registro.length} registro(s) — ${prov} provisional(es). Una fila por tomate (por ID), no por cuadro.`;
+  $('#titulo-registro').textContent = `${s.registro.length} registro(s) — ${prov} provisional(es). Una fila por tomate (por ID) de cada archivo, no por cuadro.`;
   $('#t-registro').innerHTML = s.registro.map((r) =>
-    `<tr><td>${r.id}</td><td>${r.cuadro}</td><td>${mm(r.ancho_mm)}</td><td>${esc(r.calibre)}</td><td>${esc(r.estado_registro)}</td></tr>`).join('');
+    `<tr><td>${esc(r.fuente)}</td><td>${r.id}</td><td>${r.cuadro}</td><td>${mm(r.ancho_mm)}</td><td>${esc(r.calibre)}</td><td>${esc(r.estado_registro)}</td></tr>`).join('');
 
   $('#tab-incid').textContent = `Incidencias${s.incidencias.length ? ` (${s.incidencias.length})` : ''}`;
   $('#lista-incid').innerHTML = s.incidencias.length
-    ? s.incidencias.map((i) => `<li><b>${esc(i.hora)} · ${esc(i.origen)}</b> — ${esc(i.causa)}</li>`).join('')
+    ? s.incidencias.map((i) => `<li><b>${esc(i.hora)} · ${esc(i.origen)}</b> — ${esc(i.causa)} <span class="chico">(${esc(i.fuente)})</span></li>`).join('')
     : '<li class="vacio">Sin incidencias.</li>';
   if (panel === 'p-dash') refrescarDashboard();
+}
+function pintarCola(s) {
+  const caja = $('#cola-caja');
+  caja.hidden = s.cola.length === 0;
+  const pendientes = s.cola.filter((c) => c.estado === 'En espera').length;
+  $('#cola-titulo').textContent = `Cola: ${s.cola.length} archivo(s), ${pendientes} en espera`;
+  $('#btn-vaciar').disabled = s.ocupado;
+  if (arrastreCola !== null) return;  // no reescribir la lista mientras se arrastra una fila
+  const html = s.cola.map((c) => {
+    const espera = c.estado === 'En espera';
+    const clase = espera ? '' : c.estado === 'Procesando' ? 'est-proc' : c.estado === 'Listo' ? 'est-ok' : 'est-aviso';
+    return `<li data-i="${c.i}"${espera ? ' draggable="true"' : ''}>` +
+      `<span class="cola-asa" title="${espera ? 'Arrastra para cambiar el orden de análisis' : 'Ya no se puede reordenar'}">☰</span>` +
+      `<span class="cola-nombre" title="${esc(c.nombre)}">${c.i + 1}. ${esc(c.nombre)}</span>` +
+      `<span class="est ${clase}">${esc(c.tipo)} · ${esc(c.estado)}${c.registros ? ` · ${c.registros} reg.` : ''}</span>` +
+      `<button class="cola-x" data-quitar="${c.i}" aria-label="Quitar ${esc(c.nombre)}"` +
+      `${c.estado === 'Procesando' ? ' disabled' : ''}>✕</button></li>`;
+  }).join('');
+  if (html !== colaHtml) { colaHtml = html; $('#cola').innerHTML = html; }
+}
+let colaHtml = '', arrastreCola = null;
+{
+  const lista = $('#cola'), limpiar = () => lista.querySelectorAll('.destino, .arrastrando')
+    .forEach((x) => x.classList.remove('destino', 'arrastrando'));
+  lista.addEventListener('dragstart', (e) => {
+    const li = e.target.closest('li[draggable="true"]'); if (!li) return;
+    arrastreCola = Number(li.dataset.i); li.classList.add('arrastrando');
+    e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(arrastreCola));
+  });
+  lista.addEventListener('dragover', (e) => {
+    if (arrastreCola === null) return;
+    e.preventDefault();
+    const li = e.target.closest('li'); lista.querySelectorAll('.destino').forEach((x) => x.classList.remove('destino'));
+    if (li) li.classList.add('destino');
+  });
+  lista.addEventListener('drop', async (e) => {
+    if (arrastreCola === null) return;
+    e.preventDefault();
+    const li = e.target.closest('li'), de = arrastreCola;
+    arrastreCola = null; limpiar();
+    if (li && Number(li.dataset.i) !== de) { await post(`/api/cola/mover?de=${de}&a=${li.dataset.i}`); refrescar(); }
+  });
+  lista.addEventListener('dragend', () => { arrastreCola = null; limpiar(); });
 }
 async function refrescar() {
   try { render(await (await fetch('/api/estado', { cache: 'no-store' })).json()); }
@@ -158,12 +201,13 @@ async function refrescarDashboard() {
 
 // ---------- zona de medición (ROI) arrastrable ----------
 const ROI_MIN = 20, roiEl = $('#roi');
-let roi = null, roiDefecto = null, cuadro = null, arrastre = null, roiTimer, roiIgnorarHasta = 0;
+let roi = null, cuadro = null, arrastre = null, roiTimer, roiIgnorarHasta = 0;
 const acotar = (v, a, b) => Math.max(a, Math.min(b, v));
 
 function recibirRoi(r) {
-  roiDefecto = r.defecto; cuadro = r.cuadro;
-  if (!arrastre && Date.now() > roiIgnorarHasta) roi = [...r.valor];  // no pisar lo que el usuario está moviendo
+  cuadro = r.cuadro;
+  // el servidor entrega la zona vigente (por defecto, el cuadro completo); no pisar lo que el usuario mueve
+  if (!arrastre && Date.now() > roiIgnorarHasta) roi = r.valor ? [...r.valor] : null;
   pintarRoi();
 }
 function geom() {  // dónde se dibuja el fotograma dentro del visor (el <img> usa object-fit: contain)
@@ -185,9 +229,8 @@ function pintarRoi() {
   const [x, y, w, h] = roiVisible();
   roiEl.hidden = false;
   Object.assign(roiEl.style, { left: `${g.x0 + x * g.k}px`, top: `${g.y0 + y * g.k}px`, width: `${w * g.k}px`, height: `${h * g.k}px` });
-  const recortada = roi.some((v, i) => v !== [x, y, w, h][i]);
-  $('#roi-txt').textContent = `Zona de medición: x ${x}, y ${y}, ${w} × ${h} px` +
-    (recortada ? ' (la zona guardada se salía de la imagen; mueve o suelta para ajustarla)' : '');
+  const completa = x === 0 && y === 0 && w === g.nw && h === g.nh;
+  $('#roi-txt').textContent = `Zona de medición: x ${x}, y ${y}, ${w} × ${h} px` + (completa ? ' (cuadro completo)' : '');
 }
 roiEl.addEventListener('pointerdown', (e) => {
   const g = geom(); if (!g || !roi) return;
@@ -224,9 +267,10 @@ async function enviarRoi() {
     if (!j.ok) aviso(j.mensaje, false);
   } catch (e) { aviso('No se pudo enviar la zona de medición', false); }
 }
-$('#btn-roi-reset').addEventListener('click', () => {
-  if (!roiDefecto) return;
-  roi = [...roiDefecto]; pintarRoi(); enviarRoi();
+$('#btn-roi-reset').addEventListener('click', async () => {
+  roiIgnorarHasta = 0;
+  await post('/api/roi', { body: JSON.stringify({ completa: true }) });
+  refrescar();
 });
 new ResizeObserver(pintarRoi).observe($('.visor'));
 $('#video').addEventListener('load', pintarRoi);
@@ -268,31 +312,39 @@ let defectoHsv = { min: [0, 70, 50], max: [179, 255, 255] };
 pintarSliders();
 
 // ---------- acciones ----------
-async function subir(archivo) {
-  aviso(`Subiendo ${archivo.name}…`);
-  await post(`/api/fuente/archivo?nombre=${encodeURIComponent(archivo.name)}`,
-    { body: archivo, headers: { 'Content-Type': 'application/octet-stream' } });
-  refrescar();
+async function subir(archivos) {
+  for (const archivo of archivos) {  // de a uno: cada archivo entra a la cola en el orden elegido
+    aviso(`Subiendo ${archivo.name}…`);
+    await post(`/api/fuente/archivo?nombre=${encodeURIComponent(archivo.name)}`,
+      { body: archivo, headers: { 'Content-Type': 'application/octet-stream' } });
+    await refrescar();
+  }
 }
 const accion = (url) => async () => { await post(url); refrescar(); };
 const iniciar = accion('/api/iniciar'), detener = accion('/api/detener'), repetir = async () => {
   if (ultimo && JSON.parse(ultimo).puede_guardar && !confirm('Hay registros que se perderán. ¿Continuar?')) return;
   await post('/api/repetir'); refrescar();
 };
-function guardar() {
+async function guardar() {
   if ($('#btn-guardar').disabled) return;
-  if (!confirm('¿Guardar el CSV de registros y la vista anotada?')) return;
-  for (const [url, nombre] of [['/api/registro.csv', 'registro.csv'], ['/api/vista.png', 'vista_anotada.png']]) {
+  if (!confirm('¿Guardar los dos CSV (Excel y para programas) y la vista anotada?')) return;
+  const descargas = [['/api/registro.csv?formato=excel', 'registro.csv'], ['/api/registro.csv?formato=datos', 'registro_datos.csv'],
+    ['/api/vista.png', 'vista_anotada.png']];
+  for (const [url, nombre] of descargas) {
     const a = document.createElement('a'); a.href = url; a.download = nombre; document.body.append(a); a.click(); a.remove();
+    await new Promise((r) => setTimeout(r, 300));  // espacio entre descargas para que el navegador no las agrupe
   }
 }
 $('#btn-iniciar').addEventListener('click', iniciar);
 $('#btn-detener').addEventListener('click', detener);
 $('#btn-guardar').addEventListener('click', guardar);
-$('#btn-datos').addEventListener('click', () => {
-  if ($('#btn-datos').disabled) return;
-  const a = document.createElement('a'); a.href = '/api/registro.csv?formato=datos'; a.download = 'registro_datos.csv';
-  document.body.append(a); a.click(); a.remove();
+$('#btn-vaciar').addEventListener('click', async () => {
+  if (ultimo && JSON.parse(ultimo).puede_guardar && !confirm('Hay registros que se perderán. ¿Vaciar la cola?')) return;
+  await post('/api/cola/vaciar'); refrescar();
+});
+$('#cola').addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-quitar]'); if (!b || b.disabled) return;
+  await post(`/api/cola/quitar?i=${b.dataset.quitar}`); refrescar();
 });
 $('#btn-repetir').addEventListener('click', repetir);
 $('#btn-muestra').addEventListener('click', accion('/api/fuente/muestra'));
@@ -303,10 +355,10 @@ $('#btn-camara').addEventListener('click', async () => {
 const zona = $('#zona'), input = $('#archivo');
 zona.addEventListener('click', () => input.click());
 zona.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') input.click(); });
-input.addEventListener('change', () => { if (input.files[0]) subir(input.files[0]); input.value = ''; });
+input.addEventListener('change', () => { const f = [...input.files]; input.value = ''; if (f.length) subir(f); });
 ['dragenter', 'dragover'].forEach((ev) => zona.addEventListener(ev, (e) => { e.preventDefault(); zona.classList.add('sobre'); }));
 ['dragleave', 'drop'].forEach((ev) => zona.addEventListener(ev, (e) => { e.preventDefault(); zona.classList.remove('sobre'); }));
-zona.addEventListener('drop', (e) => { if (e.dataTransfer.files[0]) subir(e.dataTransfer.files[0]); });
+zona.addEventListener('drop', (e) => { const f = [...e.dataTransfer.files]; if (f.length) subir(f); });
 
 document.addEventListener('keydown', (e) => {
   if (e.ctrlKey || e.metaKey || e.altKey || ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
