@@ -1,11 +1,5 @@
 """
-MÓDULO DE SEGMENTACIÓN (Actividad A2.3)
-
-¿CÓMO TRABAJAR AQUÍ?
-1. En `process()`, reemplaza los umbrales HSV de prueba por los valores reales
-   que separen el tomate del fondo de la cinta transportadora.
-2. Revisa la validación `is_valid_mask`. Si dos tomates vienen pegados (área muy grande
-   o baja circularidad), márcalos o sepáralos con Watershed/erosión para tu informe de fallos.
+MÓDULO DE SEGMENTACIÓN 
 
 El método `process(frame)` SIEMPRE debe devolver `(clean_mask, instances)`, donde `instances`
 es una lista de diccionarios con exactamente estas llaves:
@@ -21,22 +15,85 @@ es una lista de diccionarios con exactamente estas llaves:
 import cv2
 import numpy as np
 
+
 class ClassicSegmenter:
     def __init__(self, kernel_size=5, min_area_px=500, hsv_lower=(0, 70, 50),
-                 hsv_upper=(179, 255, 255)):
+                 hsv_upper=(179, 255, 255), rangos_extra=None,
+                 fondo_referencia=None, umbral_diferencia=30,
+                 separar_contacto=False, ajuste_pico=0.5):
+        """
+        hsv_lower/hsv_upper: rango de color principal a buscar.
+        rangos_extra: lista opcional de (lower, upper) adicionales -- se combinan con OR
+            entre sí y con el rango principal (p.ej. para buscar rojo Y verde a la vez).
+        fondo_referencia: imagen BGR del fondo vacío (opcional). Si se da, además de
+            cumplir el color, el píxel debe ser distinto a este fondo (AND). Sin esto,
+            la segmentación es solo por color, igual que antes.
+        umbral_diferencia: solo se usa si se da `fondo_referencia` -- diferencia mínima
+            (0-255) para considerar un píxel "distinto al fondo".
+        """
         self.kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_size, kernel_size))
         self.min_area_px = min_area_px
-        self.hsv_lower = np.array(hsv_lower)
-        self.hsv_upper = np.array(hsv_upper)
+        self.rangos = [(np.array(hsv_lower), np.array(hsv_upper))]
+        if rangos_extra:
+            self.rangos += [(np.array(lo), np.array(hi)) for lo, hi in rangos_extra]
+        self.fondo_referencia = fondo_referencia
+        self.umbral_diferencia = umbral_diferencia
+        self.separar_contacto = separar_contacto
+        self.ajuste_pico = ajuste_pico  # 0-1: que fraccion de la distancia maxima al
+                                         # borde se exige para considerar "centro seguro"
+                                         # de un tomate. Mas alto = corta mas facil pero
+                                         # arriesga partir un tomate sano en 2.
 
     def process(self, frame):
         _, clean_mask, instances = self.process_with_masks(frame)
         return clean_mask, instances
 
+    def _mascara_color(self, frame):
+        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        mascara = np.zeros(hsv.shape[:2], dtype=np.uint8)
+        for lo, hi in self.rangos:
+            mascara = cv2.bitwise_or(mascara, cv2.inRange(hsv, lo, hi))
+        return mascara
+
+    def _mascara_fondo(self, frame):
+        diff = cv2.absdiff(frame, self.fondo_referencia)
+        diff_gris = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
+        _, mascara = cv2.threshold(diff_gris, self.umbral_diferencia, 255, cv2.THRESH_BINARY)
+        return mascara
+
+    def _separar_contornos_tocando(self, clean_mask, frame):
+        """Watershed sobre la mascara: usa la distancia de cada pixel al borde mas
+        cercano para encontrar un 'centro seguro' por tomate, y corta en el valle entre
+        dos centros que estan pegados. Devuelve una lista de contornos (uno por tomate
+        ya separado), en vez de un contorno por blob conectado."""
+        dist = cv2.distanceTransform(clean_mask, cv2.DIST_L2, 5)
+        if dist.max() == 0:
+            return []
+        _, picos = cv2.threshold(dist, self.ajuste_pico * dist.max(), 255, 0)
+        picos = picos.astype(np.uint8)
+
+        n_picos, marcadores = cv2.connectedComponents(picos)
+        if n_picos <= 1:
+            return []  # no hay ni un "centro seguro" -- no se puede separar nada
+
+        zona_dudosa = cv2.subtract(clean_mask, picos)
+        marcadores = marcadores + 1
+        marcadores[zona_dudosa == 255] = 0
+
+        cv2.watershed(frame, marcadores)
+
+        contornos = []
+        for etiqueta in range(2, n_picos + 2):
+            mascara_etiqueta = np.uint8(marcadores == etiqueta) * 255
+            cnts, _ = cv2.findContours(mascara_etiqueta, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            contornos.extend(cnts)
+        return contornos
+
     def process_with_masks(self, frame):
         """Devuelve la máscara inicial, la máscara limpia y las detecciones."""
-        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-        raw_mask = cv2.inRange(hsv, self.hsv_lower, self.hsv_upper)
+        raw_mask = self._mascara_color(frame)
+        if self.fondo_referencia is not None:
+            raw_mask = cv2.bitwise_and(raw_mask, self._mascara_fondo(frame))
 
         # Limpieza morfológica (elimina ruido blanco y rellena huecos negros)
         clean_mask = cv2.morphologyEx(raw_mask, cv2.MORPH_OPEN, self.kernel)
@@ -44,6 +101,11 @@ class ClassicSegmenter:
 
         # 2. Encontrar contornos de cada tomate
         contours, _ = cv2.findContours(clean_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        if self.separar_contacto:
+            contornos_separados = self._separar_contornos_tocando(clean_mask, frame)
+            if contornos_separados:
+                contours = contornos_separados
 
         instances = []
         h_img, w_img = frame.shape[:2]
