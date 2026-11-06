@@ -10,6 +10,9 @@
 <header class="barra">
   <div class="marca"><span class="logo" aria-hidden="true">🍅</span>
     <div><h1>AgroVision</h1><p>Inspección visual de tomates · TEL328</p></div></div>
+  <label class="interruptor" title="Muestra las etapas intermedias, el esquema del flujo y la explicación del pipeline">
+    <input type="checkbox" id="modo-did"> <span>Modo didáctico</span>
+  </label>
 </header>
 
 <main class="rejilla">
@@ -18,8 +21,8 @@
     <div class="tarjeta">
       <div class="tabs" role="tablist" aria-label="Vista del procesamiento">
         <button class="tab activa" data-vista="detecciones" role="tab">1 · Detecciones</button>
-        <button class="tab" data-vista="mascara" role="tab">2a · Máscara HSV</button>
-        <button class="tab" data-vista="limpia" role="tab">2b · Máscara limpia</button>
+        <button class="tab did" data-vista="mascara" role="tab">2a · Máscara HSV</button>
+        <button class="tab did" data-vista="limpia" role="tab">2b · Máscara limpia</button>
       </div>
       <div class="visor">
         <img id="video" alt="Video en inspección">
@@ -35,7 +38,7 @@
         <span id="roi-txt" class="chico">Zona de medición: aparece sobre la imagen cuando hay un cuadro</span>
         <button id="btn-roi-reset" class="sec" title="Vuelve a medir sobre todo el cuadro">Restablecer zona</button>
       </div>
-      <p id="explica" class="explica"></p>
+      <p id="explica" class="explica did"></p>
     </div>
 
     <details class="tarjeta menu">
@@ -53,7 +56,15 @@
       </details>
     </details>
 
-    <div class="tarjeta">
+    <div class="tarjeta did">
+      <h2>Flujo de procesamiento</h2>
+      <p class="explica">Camino de cada cuadro, de la imagen al registro. Haz clic en una etapa de la segmentación
+        para ver su máscara en el video.</p>
+      <ol class="flujo" id="flujo"></ol>
+      <p class="explica" id="flujo-nota"></p>
+    </div>
+
+    <div class="tarjeta did">
       <h2>Pipeline: ¿qué pasa con cada cuadro?</h2>
       <ol class="etapas" id="etapas"></ol>
       <p id="etapa-detalle" class="explica">Pasa el mouse o haz clic en una etapa para ver qué hace.</p>

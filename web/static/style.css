@@ -41,6 +41,24 @@ details.submenu { margin: 10px 0 0 12px; padding-left: 12px; border-left: 2px so
 .cola-x:hover:not(:disabled) { color: var(--aviso); } .cola-x:disabled { opacity: .3; cursor: default; }
 .cola-cab { justify-content: space-between; margin-top: 8px; font-size: 13px; }
 .chico-btn { padding: 2px 8px; font-size: 12px; }
+/* modo didáctico: lo marcado con .did solo se ve con el interruptor activo */
+body:not(.modo-did) .did { display: none; }
+.interruptor { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+  font-weight: 600; font-size: 14px; }
+.interruptor input { width: 18px; height: 18px; accent-color: var(--prim); cursor: pointer; }
+.flujo { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); counter-reset: paso; }
+.flujo li { position: relative; }
+.flujo li:not(:last-child)::after { content: "→"; position: absolute; right: -9px; top: 38%; z-index: 1;
+  color: var(--suave); font-weight: 700; background: var(--tarjeta); line-height: 1; }
+.paso { width: 100%; height: 100%; text-align: left; padding: 8px 10px; border-radius: 8px; cursor: default;
+  border: 1px solid var(--borde); background: var(--tabla-alt); color: var(--texto); font: inherit; }
+button.paso { cursor: pointer; }
+button.paso:hover, button.paso.sel { border-color: var(--prim); }
+.paso b { display: block; font-size: 13px; }
+.paso small { display: block; color: var(--suave); font-size: 12px; margin-top: 2px; }
+.paso .mod { font-size: 11px; color: var(--info); }
+.paso.pend { border-style: dashed; opacity: .75; }
 .estado-fuente { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 12px; }
 .pill { padding: 4px 12px; border-radius: 999px; font-weight: 600; font-size: 13px; border: 1px solid currentColor; }
 .pill-espera { color: var(--suave); } .pill-listo { color: var(--info); }

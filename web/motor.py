@@ -176,8 +176,11 @@ class Motor:
     # --------------------------------------------------------- umbrales HSV
     def _aplicar_hsv(self, pipeline):
         minimo, maximo = self.hsv
-        pipeline.segmentador.hsv_lower = np.array(minimo)
-        pipeline.segmentador.hsv_upper = np.array(maximo)
+        inferior, superior = np.array(minimo), np.array(maximo)
+        seg = pipeline.segmentador
+        seg.hsv_lower, seg.hsv_upper = inferior, superior  # seg.py anterior: dos atributos
+        if getattr(seg, "rangos", None):  # seg.py nuevo: lista de rangos; el primero es el principal
+            seg.rangos[0] = (inferior, superior)
 
     def fijar_hsv(self, minimo, maximo):
         """Cambia los umbrales de segmentación. Con una vista previa cargada y sin sesión en

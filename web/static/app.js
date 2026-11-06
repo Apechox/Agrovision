@@ -82,6 +82,38 @@ document.querySelectorAll('.etapa').forEach((b) => {
   b.addEventListener('click', () => { mostrar(); if (ETAPAS[b.dataset.i].n === 2) elegirVista('mascara'); });
 });
 
+// ---------- esquema del flujo (modo didáctico) ----------
+const FLUJO = [
+  { t: 'Video', d: 'Cuadro de la cámara o del archivo (BGR).', m: 'M1 · acq.py', vista: 'detecciones' },
+  { t: 'Máscara HSV', d: 'Pasa a HSV y deja en blanco el rango de color del tomate (inRange).', m: 'M2 · seg.py', vista: 'mascara' },
+  { t: 'Máscara limpia', d: 'Apertura quita el ruido; cierre rellena huecos.', m: 'M2 · seg.py', vista: 'limpia' },
+  { t: 'Detecciones', d: 'Contornos sobre la máscara limpia; marca los que tocan el borde.', m: 'M2 · seg.py', vista: 'detecciones' },
+  { t: 'Seguimiento', d: 'Mantiene un ID por tomate entre cuadros.', m: 'M3 · track.py' },
+  { t: 'Calibración', d: 'ancho en px ÷ px/mm = mm, dentro de la zona de medición.', m: 'M4 · calib.py' },
+  { t: 'Madurez y manchas', d: 'Pendiente: módulos A3.1 y A3.2 aún no integrados.', m: 'M5', pend: true },
+  { t: 'Registro', d: 'Una fila por ID; exporta CSV.', m: 'M6 · sesion.py' },
+];
+$('#flujo').innerHTML = FLUJO.map((p, i) => {
+  const cuerpo = `<span class="mod">${esc(p.m)}</span><b>${i + 1}. ${esc(p.t)}</b><small>${esc(p.d)}</small>`;
+  return `<li>${p.vista && p.t !== 'Video' && p.t !== 'Detecciones'
+    ? `<button class="paso" data-vista-flujo="${p.vista}">${cuerpo}</button>`
+    : `<div class="paso${p.pend ? ' pend' : ''}">${cuerpo}</div>`}</li>`;
+}).join('');
+$('#flujo-nota').textContent = 'Ojo: la máscara HSV no se usa para detectar; solo alimenta a la máscara limpia. ' +
+  'Los contornos (las detecciones) salen de la máscara limpia.';
+document.querySelectorAll('[data-vista-flujo]').forEach((b) =>
+  b.addEventListener('click', () => elegirVista(b.dataset.vistaFlujo)));
+
+// ---------- modo didáctico (se recuerda en este navegador) ----------
+function aplicarModoDidactico(activo, guardar = true) {
+  document.body.classList.toggle('modo-did', activo);
+  $('#modo-did').checked = activo;
+  if (!activo && vista !== 'detecciones') elegirVista('detecciones');  // la máscara ya no tiene pestaña
+  if (guardar) { try { localStorage.setItem('agrovision.didactico', activo ? '1' : '0'); } catch (e) { /* sin almacenamiento */ } }
+  pintarRoi();  // el alto del visor puede cambiar al mostrar u ocultar bloques
+}
+$('#modo-did').addEventListener('change', (e) => aplicarModoDidactico(e.target.checked));
+
 // ---------- paneles de resultados ----------
 let panel = 'p-actual';
 function elegirPanel(id) {
@@ -367,6 +399,9 @@ document.addEventListener('keydown', (e) => {
   else if (k === 'e') guardar(); else if (k === 'r') repetir(); else if (k === 'd') elegirPanel('p-dash');
 });
 
+let didInicial = false;
+try { didInicial = localStorage.getItem('agrovision.didactico') === '1'; } catch (e) { /* sin almacenamiento */ }
 elegirVista('detecciones');
+aplicarModoDidactico(didInicial, false);
 refrescar();
 setInterval(refrescar, 300);
