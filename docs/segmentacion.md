@@ -60,7 +60,7 @@ Resultado: 1 tomate detectado, `bbox=(209,25,276,335)`, `centroide=(343,202)`, `
 
 Imagen real de tomates en planta, del set de ejemplos público de Laboro Tomato (repositorio `laboroai/LaboroTomatoDatasets`).
 
-| Original | Resultado con ID por tomate (antes de la corrección de la sección 5) |
+| Original | Resultado con ID por tomate |
 |---|---|
 | ![](evidencia_segmentacion/05_foto_real_multitomate_original.png) | ![](evidencia_segmentacion/06_foto_real_multitomate_anotada.png) |
 
