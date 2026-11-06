@@ -21,9 +21,9 @@ p { margin: 0; }
 .marca { display: flex; align-items: center; gap: 12px; }
 .marca p { color: var(--suave); font-size: 13px; }
 .logo { font-size: 30px; }
-.barra-estado { display: flex; align-items: center; gap: 14px; }
 .meta { color: var(--suave); font-size: 13px; }
 
+.estado-fuente { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 12px; }
 .pill { padding: 4px 12px; border-radius: 999px; font-weight: 600; font-size: 13px; border: 1px solid currentColor; }
 .pill-espera { color: var(--suave); } .pill-listo { color: var(--info); }
 .pill-proc { color: var(--ok); } .pill-res { color: var(--prim); } .pill-aviso { color: var(--aviso); }

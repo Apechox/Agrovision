@@ -10,10 +10,6 @@
 <header class="barra">
   <div class="marca"><span class="logo" aria-hidden="true">🍅</span>
     <div><h1>AgroVision</h1><p>Inspección visual de tomates · TEL328</p></div></div>
-  <div class="barra-estado">
-    <span id="pill" class="pill pill-espera">● Esperando fuente</span>
-    <span id="meta" class="meta"></span>
-  </div>
 </header>
 
 <main class="rejilla">
@@ -40,6 +36,16 @@
         <button id="btn-roi-reset" class="sec">Restablecer zona</button>
       </div>
       <p id="explica" class="explica"></p>
+    </div>
+
+    <div class="tarjeta">
+      <div class="fila botones">
+        <button id="btn-iniciar" class="prim"><kbd>W</kbd> Iniciar</button>
+        <button id="btn-detener" class="sec"><kbd>S</kbd> Detener</button>
+        <button id="btn-guardar" class="sec"><kbd>E</kbd> Guardar</button>
+        <button id="btn-datos" class="sec" title="CSV con coma y nombres técnicos, para programas (Python, etc.)">CSV para programas</button>
+        <button id="btn-repetir" class="sec"><kbd>R</kbd> Repetir</button>
+      </div>
     </div>
 
     <div class="tarjeta">
@@ -76,16 +82,9 @@
           <input id="camara-n" type="number" min="0" max="9" value="0"></label>
         <button id="btn-camara" class="sec">Usar cámara</button>
       </div>
-      <p id="fuente-actual" class="chico">Sin fuente seleccionada</p>
-    </div>
-
-    <div class="tarjeta">
-      <div class="fila botones">
-        <button id="btn-iniciar" class="prim"><kbd>W</kbd> Iniciar</button>
-        <button id="btn-detener" class="sec"><kbd>S</kbd> Detener</button>
-        <button id="btn-guardar" class="sec"><kbd>E</kbd> Guardar</button>
-        <button id="btn-datos" class="sec" title="CSV con coma y nombres técnicos, para programas (Python, etc.)">CSV para programas</button>
-        <button id="btn-repetir" class="sec"><kbd>R</kbd> Repetir</button>
+      <div class="estado-fuente">
+        <span id="pill" class="pill pill-espera">● Esperando fuente</span>
+        <span id="meta" class="meta"></span>
       </div>
     </div>
 

@@ -107,7 +107,6 @@ function render(s) {
   const pill = $('#pill'); pill.textContent = '● ' + txt; pill.className = 'pill ' + clase;
   $('#meta').textContent = [s.mensaje, s.ocupado && s.fps ? `${s.fps} FPS de proceso` : '', s.cuadros ? `cuadros: ${s.cuadros}` : '']
     .filter(Boolean).join(' · ');
-  $('#fuente-actual').textContent = s.fuente ? `Fuente: ${s.fuente}` : 'Sin fuente seleccionada';
   $('#aviso-interrupcion').hidden = !s.interrumpida;
 
   recibirRoi(s.roi);
