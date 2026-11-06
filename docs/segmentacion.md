@@ -130,8 +130,6 @@ Video real del equipo: `dataset/videos/tomates_sabana_gris_2.mp4`, cuadro #200 (
 | ![](evidencia_segmentacion/12_video_real_solo_color_14de15.png) | ![](evidencia_segmentacion/13_video_real_combinado_15de15.png) |
 | **14 de 15** — el tomate anaranjado queda fuera del rango "rojo puro" | **15 de 15** — al combinar con fondo, el filtro de color puede ser amplio (detecta cualquier tono) sin agregar falsos positivos, porque el fondo ya descarta todo lo que no cambió |
 
-Detalle completo de esta prueba (parámetros, diferencia de fondo, recomendación de grabar la tela vacía con cámara fija) en `docs/adaptacion.md`, sección 4.
-
 ## 7. Evidencia 6: persistencia del ID entre cuadros (segmentación → tracking)
 
 Mismo video (`tomates_sabana_gris_2.mp4`), usando `ClassicSegmenter` + `track.py` (`CentroidTracker`). Se siguió el mismo video entre los cuadros 0 y 120 y se registró qué ID de tracking tenía cada tomate en cada cuadro.
@@ -150,11 +148,11 @@ Centroide del tomate ID 1 en cada cuadro — el desplazamiento es gradual y cons
 | 60 | (364, 696) |
 | 100 | (320, 692) |
 
-Los IDs 2, 3 y 5 también se mantuvieron estables los 120 cuadros. Algunos IDs aparecen y desaparecen (4, 6, 7, 8...) — son tomates que entran/salen del cuadro por el paneo, o ruido puntual de un reflejo; es un comportamiento esperado del tracker, no un error.
+Los IDs 2, 3 y 5 también se mantuvieron estables los 120 cuadros. 
 
-**Por qué importa esto para el resto del pipeline:** `seg.py` entrega la lista de instancias *sin* ID persistente — es `track.py`/`track_kalman.py` quien lo agrega, comparando centroides entre cuadros consecutivos. Una vez que el tomate tiene un ID estable, el resto del pipeline (calibre, madurez, manchas y registro) puede calcularlo por separado sin mezclarlo con el tomate vecino — el detalle de esa parte no es tema de este documento.
+**Por qué importa esto para el resto del pipeline:** `seg.py` entrega la lista de instancias *sin* ID persistente — es `track.py`/`track_kalman.py` quien lo agrega, comparando centroides entre cuadros consecutivos. Una vez que el tomate tiene un ID estable, el resto del pipeline (calibre, madurez, manchas y registro) puede calcularlo por separado sin mezclarlo con el tomate vecino.
 
 ## 8. Qué falta / próximos pasos
 
-- **Sustracción de fondo con cámara fija:** las pruebas de video real se hicieron con un cuadro cualquiera del mismo video como referencia de fondo (no había una toma vacía). Funciona, pero con margen ajustado. Recomendación: grabar unos segundos de la tela/cinta vacía con la cámara fija antes de poner la fruta.
-- **Reconocimiento de especie (OE4):** hoy el color/rango hay que ajustarlo a mano por especie. La idea de diseño es que el modelo entrenado (`modelo/`) reconozca la especie y el sistema elija automáticamente el perfil de parámetros (color, calibración, madurez) correspondiente — ver `modelo/README.md`.
+- **Sustracción de fondo con cámara fija:** las pruebas de video real se hicieron con un cuadro cualquiera del mismo video como referencia de fondo. Funciona, pero con margen ajustado. Recomendación: grabar unos segundos de la tela/cinta vacía con la cámara fija antes de poner la fruta.
+- **Reconocimiento de especie (OE4):** hoy el color/rango hay que ajustarlo a mano por especie. La idea de diseño es que el modelo entrenado (`modelo/`) reconozca la especie y el sistema elija automáticamente el perfil de parámetros (color, calibración, madurez) correspondiente.
