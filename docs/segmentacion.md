@@ -152,7 +152,7 @@ Centroide del tomate ID 1 en cada cuadro — el desplazamiento es gradual y cons
 
 Los IDs 2, 3 y 5 también se mantuvieron estables los 120 cuadros. Algunos IDs aparecen y desaparecen (4, 6, 7, 8...) — son tomates que entran/salen del cuadro por el paneo, o ruido puntual de un reflejo; es un comportamiento esperado del tracker, no un error.
 
-**Por qué importa esto para el resto del pipeline:** `seg.py` entrega la lista de instancias *sin* ID persistente — es `track.py`/`track_kalman.py` quien lo agrega, comparando centroides entre cuadros consecutivos. Una vez que el tomate tiene un ID estable, `main_test.py` arma su máscara individual y le calcula calibre/madurez/manchas por separado (nunca se mezcla con el tomate vecino), y `registro.py` guarda una sola fila por ID en el CSV — el mismo formato que después lee `interfaz/dashboard.py`.
+**Por qué importa esto para el resto del pipeline:** `seg.py` entrega la lista de instancias *sin* ID persistente — es `track.py`/`track_kalman.py` quien lo agrega, comparando centroides entre cuadros consecutivos. Una vez que el tomate tiene un ID estable, el resto del pipeline (calibre, madurez, manchas y registro) puede calcularlo por separado sin mezclarlo con el tomate vecino — el detalle de esa parte no es tema de este documento.
 
 ## 8. Qué falta / próximos pasos
 
