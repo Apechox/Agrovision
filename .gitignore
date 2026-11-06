@@ -1,1 +1,11 @@
 __pycache__
+.venv/
+salidas/
+
+labels.cache
+runs
+yolo11n.pt
+yolov8n-seg.pt
+tests
+videos_prueba
+salida

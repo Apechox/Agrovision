@@ -1,0 +1,40 @@
+{
+  "cuadros": 275,
+  "detecciones": 2532,
+  "detecciones_borde": 617,
+  "observaciones_seguidas": 1915,
+  "max_simultaneos": 15,
+  "ids": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15
+  ],
+  "ids_asignados": 15,
+  "fuente": "../VIDEOS/tomates_sabana_gris_4.mp4",
+  "sha256": "6e4355e4006aa4478950f44d215a4caf0e29d3bcda1235369ba662dcb1713eeb",
+  "tracker": "centroide",
+  "hsv_min": [
+    0,
+    70,
+    50
+  ],
+  "hsv_max": [
+    179,
+    255,
+    255
+  ],
+  "estado_final": "FIN_DE_ARCHIVO",
+  "opencv": "5.0.0"
+}

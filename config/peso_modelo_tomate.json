@@ -1,0 +1,12 @@
+{
+  "tipo": "tomate",
+  "variable": "ancho_mm",
+  "a": 0.0004148721187775827,
+  "b": 2.9750161964011457,
+  "n": 30,
+  "x_min": 47.7,
+  "x_max": 77.3,
+  "r2": 0.9827,
+  "rmse_loo_g": 4.39,
+  "version": "peso-tomate-n30"
+}

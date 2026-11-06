@@ -1,0 +1,66 @@
+{
+  "tipo": "tomate",
+  "version": "1.0",
+  "nota": "El calibre de los tomates se obtuvo de https://www.librosymanualesdeagronomia.com/%E2%9C%93-manual-del-cultivo-de-tomate-libros-gratis-agronomia/",
+  "atributos": {
+    "calibre": true,
+    "peso": true,
+    "madurez": true,
+    "manchas": true
+  },
+  "calibre": {
+    "dimension": "ancho_bbox",
+    "dimension_opciones": ["ancho_bbox", "lado_menor_rect"],
+    "unidad": "mm",
+    "rango_validado_mm": [47.0, 150.0],
+    "altura_camara_mm": null,
+    "categorias": [
+      {"nombre": "Pequeño",      "min_mm": 47.0, "max_mm": 56.0},
+      {"nombre": "Mediano",      "min_mm": 56.0, "max_mm": 66.0},
+      {"nombre": "Grande",       "min_mm": 66.0, "max_mm": 81.0},
+      {"nombre": "Extra grande", "min_mm": 81.0, "max_mm": 150.0}
+    ]
+  },
+  "madurez": {
+    "hsv": {
+      "rojo":       {"h_bajo": [0, 10], "h_alto": [170, 179], "s_min": 90, "v_min": 50},
+      "transicion": {"h": [11, 35], "s_min": 70, "v_min": 50},
+      "verde":      {"h": [36, 85], "s_min": 50, "v_min": 40}
+    },
+        "excluir": {
+      "sombra_v_max": 45,
+      "reflejo_s_max": 60,
+      "reflejo_v_min": 200,
+      "dilatar_reflejo_px": 2
+    },
+    "min_pixeles_validos": 400,
+    "min_fraccion_valida": 0.5,
+    "min_fraccion_clasificada": 0.5,
+    "reglas": {
+      "maduro_r_min": 0.6,
+      "transicion_c_min": 0.25,
+      "transicion_r_min": 0.15
+    }
+  },
+  "manchas": {
+    "suavizado_px": 5,
+    "erosion_borde_px": 4,
+    "v_relativo_max": 0.55,
+    "s_relativo_max": 0.45,
+    "cierre_px": 3,
+    "apertura_px": 2,
+    "area_min_mancha_px": 25,
+    "umbral_con_manchas": 0.02,
+    "excluir": {
+      "reflejo_s_max": 50,
+      "reflejo_v_min": 240,
+      "dilatar_reflejo_px": 3
+    },
+    "min_pixeles_evaluables": 400,
+    "min_fraccion_evaluable": 0.5
+  },
+  "peso": {
+    "modelo": "config/peso_modelo_tomate.json"
+  }
+
+}

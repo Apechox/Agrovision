@@ -1,0 +1,430 @@
+{
+  "synthetic_only": true,
+  "scenarios": [
+    {
+      "scenario": "Movimiento y desaparicion breve",
+      "parameters": {
+        "max_distance": 30,
+        "max_disappeared": 2
+      },
+      "frames": [
+        {
+          "frame_idx": 1,
+          "observations": [
+            {
+              "reference_fruit": "A",
+              "id": 1,
+              "centroid": [
+                100,
+                100
+              ]
+            },
+            {
+              "reference_fruit": "B",
+              "id": 2,
+              "centroid": [
+                200,
+                100
+              ]
+            }
+          ],
+          "retained_ids": [
+            1,
+            2
+          ]
+        },
+        {
+          "frame_idx": 2,
+          "observations": [
+            {
+              "reference_fruit": "B",
+              "id": 2,
+              "centroid": [
+                210,
+                100
+              ]
+            },
+            {
+              "reference_fruit": "A",
+              "id": 1,
+              "centroid": [
+                110,
+                100
+              ]
+            }
+          ],
+          "retained_ids": [
+            1,
+            2
+          ]
+        },
+        {
+          "frame_idx": 3,
+          "observations": [
+            {
+              "reference_fruit": "B",
+              "id": 2,
+              "centroid": [
+                220,
+                100
+              ]
+            }
+          ],
+          "retained_ids": [
+            1,
+            2
+          ]
+        },
+        {
+          "frame_idx": 4,
+          "observations": [
+            {
+              "reference_fruit": "A",
+              "id": 1,
+              "centroid": [
+                130,
+                100
+              ]
+            },
+            {
+              "reference_fruit": "B",
+              "id": 2,
+              "centroid": [
+                230,
+                100
+              ]
+            }
+          ],
+          "retained_ids": [
+            1,
+            2
+          ]
+        }
+      ],
+      "histories_collected_by_demo": {
+        "1": [
+          {
+            "frame_idx": 1,
+            "centroid": [
+              100,
+              100
+            ]
+          },
+          {
+            "frame_idx": 2,
+            "centroid": [
+              110,
+              100
+            ]
+          },
+          {
+            "frame_idx": 4,
+            "centroid": [
+              130,
+              100
+            ]
+          }
+        ],
+        "2": [
+          {
+            "frame_idx": 1,
+            "centroid": [
+              200,
+              100
+            ]
+          },
+          {
+            "frame_idx": 2,
+            "centroid": [
+              210,
+              100
+            ]
+          },
+          {
+            "frame_idx": 3,
+            "centroid": [
+              220,
+              100
+            ]
+          },
+          {
+            "frame_idx": 4,
+            "centroid": [
+              230,
+              100
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "Perdida prolongada: no se recupera la identidad",
+      "parameters": {
+        "max_distance": 30,
+        "max_disappeared": 2
+      },
+      "frames": [
+        {
+          "frame_idx": 1,
+          "observations": [
+            {
+              "reference_fruit": "A",
+              "id": 1,
+              "centroid": [
+                100,
+                100
+              ]
+            }
+          ],
+          "retained_ids": [
+            1
+          ]
+        },
+        {
+          "frame_idx": 2,
+          "observations": [],
+          "retained_ids": [
+            1
+          ]
+        },
+        {
+          "frame_idx": 3,
+          "observations": [],
+          "retained_ids": [
+            1
+          ]
+        },
+        {
+          "frame_idx": 4,
+          "observations": [],
+          "retained_ids": []
+        },
+        {
+          "frame_idx": 5,
+          "observations": [
+            {
+              "reference_fruit": "A",
+              "id": 2,
+              "centroid": [
+                110,
+                100
+              ]
+            }
+          ],
+          "retained_ids": [
+            2
+          ]
+        }
+      ],
+      "histories_collected_by_demo": {
+        "1": [
+          {
+            "frame_idx": 1,
+            "centroid": [
+              100,
+              100
+            ]
+          }
+        ],
+        "2": [
+          {
+            "frame_idx": 5,
+            "centroid": [
+              110,
+              100
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "Limitacion conocida: orden A, B",
+      "parameters": {
+        "max_distance": 8,
+        "max_disappeared": 2
+      },
+      "frames": [
+        {
+          "frame_idx": 1,
+          "observations": [
+            {
+              "reference_fruit": "A",
+              "id": 1,
+              "centroid": [
+                100,
+                100
+              ]
+            },
+            {
+              "reference_fruit": "B",
+              "id": 2,
+              "centroid": [
+                110,
+                100
+              ]
+            }
+          ],
+          "retained_ids": [
+            1,
+            2
+          ]
+        },
+        {
+          "frame_idx": 2,
+          "observations": [
+            {
+              "reference_fruit": "A",
+              "id": 2,
+              "centroid": [
+                106,
+                100
+              ]
+            },
+            {
+              "reference_fruit": "B",
+              "id": 3,
+              "centroid": [
+                111,
+                100
+              ]
+            }
+          ],
+          "retained_ids": [
+            1,
+            2,
+            3
+          ]
+        }
+      ],
+      "histories_collected_by_demo": {
+        "1": [
+          {
+            "frame_idx": 1,
+            "centroid": [
+              100,
+              100
+            ]
+          }
+        ],
+        "2": [
+          {
+            "frame_idx": 1,
+            "centroid": [
+              110,
+              100
+            ]
+          },
+          {
+            "frame_idx": 2,
+            "centroid": [
+              106,
+              100
+            ]
+          }
+        ],
+        "3": [
+          {
+            "frame_idx": 2,
+            "centroid": [
+              111,
+              100
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "Misma escena: orden B, A",
+      "parameters": {
+        "max_distance": 8,
+        "max_disappeared": 2
+      },
+      "frames": [
+        {
+          "frame_idx": 1,
+          "observations": [
+            {
+              "reference_fruit": "A",
+              "id": 1,
+              "centroid": [
+                100,
+                100
+              ]
+            },
+            {
+              "reference_fruit": "B",
+              "id": 2,
+              "centroid": [
+                110,
+                100
+              ]
+            }
+          ],
+          "retained_ids": [
+            1,
+            2
+          ]
+        },
+        {
+          "frame_idx": 2,
+          "observations": [
+            {
+              "reference_fruit": "B",
+              "id": 2,
+              "centroid": [
+                111,
+                100
+              ]
+            },
+            {
+              "reference_fruit": "A",
+              "id": 1,
+              "centroid": [
+                106,
+                100
+              ]
+            }
+          ],
+          "retained_ids": [
+            1,
+            2
+          ]
+        }
+      ],
+      "histories_collected_by_demo": {
+        "1": [
+          {
+            "frame_idx": 1,
+            "centroid": [
+              100,
+              100
+            ]
+          },
+          {
+            "frame_idx": 2,
+            "centroid": [
+              106,
+              100
+            ]
+          }
+        ],
+        "2": [
+          {
+            "frame_idx": 1,
+            "centroid": [
+              110,
+              100
+            ]
+          },
+          {
+            "frame_idx": 2,
+            "centroid": [
+              111,
+              100
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

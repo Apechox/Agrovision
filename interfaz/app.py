@@ -36,6 +36,14 @@ EXT_IMAGEN = {".png", ".jpg", ".jpeg", ".bmp"}
 EXT_VIDEO = {".mp4", ".avi", ".mov", ".mkv"}
 PERIODO_CUADRO = 1 / 25  # ritmo de reproducción de video, no velocidad de la cinta
 REFRESCO_MS = 40
+import main_test2 as pipeline  # reutiliza evaluate_instances / build_row / annotate
+from funciones.acq import SourceState, VideoSource
+from funciones.calib import Calibrator
+from funciones.madurez import ColorMaturityClassifier
+from funciones.manchas import DarkSpotDetector
+from funciones.registro import SessionRegistry
+from funciones.seg import ClassicSegmenter
+from funciones.tracking.track_kalman import KalmanCentroidTracker
 
 ESPERANDO, LISTO, PROCESANDO, RESULTADO = "ESPERANDO", "LISTO", "PROCESANDO", "RESULTADO"
 
