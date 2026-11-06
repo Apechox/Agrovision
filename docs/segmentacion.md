@@ -1,6 +1,6 @@
 # Segmentación de tomates (A2.3) — código y evidencia de funcionamiento
 
-Este documento junta todo lo relacionado específicamente con la **segmentación**: qué hace el código, por qué está hecho así, y la evidencia de que funciona (y de cuándo no, y cómo se corrigió). Para la trazabilidad con los ejemplos del curso ver `docs/adaptacion.md`; este archivo es solo sobre segmentación, con más detalle y las imágenes de las pruebas. Todas las pruebas de este documento usan **fotos o video reales**, salvo donde se indica explícitamente lo contrario (un solo caso, al final de la sección 5, usado únicamente para calibrar un parámetro con un objeto de prueba controlado).
+Este documento junta todo lo relacionado específicamente con la **segmentación**: qué hace el código, por qué está hecho así, y la evidencia de que funciona (y de cuándo no, y cómo se corrigió).
 
 ## Índice
 1. [`funciones/seg.py` — una sola clase, color solo o color + fondo](#1-funcionessegpy--una-sola-clase-color-solo-o-color--fondo)
