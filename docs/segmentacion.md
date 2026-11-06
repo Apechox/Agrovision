@@ -123,7 +123,7 @@ Ambos son parte de la misma clase `ClassicSegmenter` y se pueden usar juntos (pr
 
 ## 6. Evidencia 5: video real — ambos métodos, 14/15 vs 15/15
 
-Video real del equipo: `dataset/videos/tomates_sabana_gris_2.mp4`, cuadro #200 (15 tomates cherry reales sobre tela clara, celular a pulso).
+Video real del equipo: `dataset/videos/tomates_sabana_gris_2.mp4`, cuadro #200 (15 tomates cherry reales sobre tela clara).
 
 | Método original (`ClassicSegmenter`, color rojo estricto) | Método combinado (color amplio + `fondo_referencia`) |
 |---|---|
