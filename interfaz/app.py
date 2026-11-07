@@ -28,11 +28,11 @@ from tkinter import filedialog, messagebox, ttk
 import cv2
 from PIL import Image, ImageTk
 
-import main_test2 as pipeline  # reutiliza evaluate_instances / build_row / annotate
+import main_test as pipeline  # reutiliza evaluate_instances / build_row / annotate
 from funciones.acq import SourceState, VideoSource
-from funciones.calib import Calibrator
-from funciones.madurez import ColorMaturityClassifier
-from funciones.manchas import DarkSpotDetector
+from funciones.caracteristicas.calib import Calibrator
+from funciones.caracteristicas.madurez import ColorMaturityClassifier
+from funciones.caracteristicas.manchas import DarkSpotDetector
 from funciones.registro import SessionRegistry
 from funciones.seg import ClassicSegmenter
 from funciones.tracking.track_kalman import KalmanCentroidTracker

@@ -10,7 +10,7 @@ Uso:
 import argparse
 from pathlib import Path
 
-from funciones.peso import PesoModelo
+from funciones.caracteristicas.peso import PesoModelo
 
 def main():
     ap = argparse.ArgumentParser()

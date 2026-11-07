@@ -1,4 +1,6 @@
 import argparse
+import hashlib
+import json
 import math
 import time
 import unicodedata
@@ -8,16 +10,15 @@ import cv2
 import numpy as np
 
 from funciones.acq import SourceState, VideoSource
-from funciones.calib import Calibrator
-from funciones.calibre import CalibreEvaluator
-from funciones.madurez import ColorMaturityClassifier
-from funciones.manchas import DarkSpotDetector
-from funciones.perfiles import Perfil, PerfilInvalido
-from funciones.peso import PesoEvaluator
+from funciones.caracteristicas.calib import Calibrator
+from funciones.caracteristicas.calibre import CalibreEvaluator
+from funciones.caracteristicas.madurez import ColorMaturityClassifier
+from funciones.caracteristicas.manchas import DarkSpotDetector
+from funciones.caracteristicas.perfiles import Perfil, PerfilInvalido
+from funciones.caracteristicas.peso import PesoEvaluator
 from funciones.registro import SessionRegistry
 from funciones.seg import ClassicSegmenter
-from funciones.track import CentroidTracker
-from funciones.track_kalman import KalmanCentroidTracker
+from funciones.tracking.track import CentroidTracker
 
 
 class Evaluadores:
@@ -34,21 +35,26 @@ class Evaluadores:
 
 
 def instance_mask(shape_hw, contour):
-    """Construye la máscara binaria (0/255) de UN solo tomate a partir de su contorno,
-    para que madurez.py y manchas.py evalúen solo los píxeles de ese fruto."""
+    """Construye la máscara binaria (0/255) de un solo tomate a partir de su contorno."""
     mask = np.zeros(shape_hw, dtype=np.uint8)
     cv2.drawContours(mask, [contour], -1, 255, thickness=cv2.FILLED)
     return mask
 
 
 def _no_evaluable(causa):
-    return {"label": "No evaluable", "c_ratio": None, "r_ratio": None, "g_ratio": None,
-            "defect_ratio": None, "regiones": [], "causa": causa}
+    return {
+        "label": "No evaluable",
+        "c_ratio": None,
+        "r_ratio": None,
+        "g_ratio": None,
+        "defect_ratio": None,
+        "regiones": [],
+        "causa": causa,
+    }
 
 
 def evaluate_instances(frame, tracked, ev):
-    """Calcula calibre, peso, madurez y manchas por tomate seguido (RF3, RF4, RF5) y
-    devuelve la lista de resultados en el mismo orden que `tracked`."""
+    """Calcula calibre, peso, madurez y manchas por tomate seguido."""
     h, w = frame.shape[:2]
     scale = getattr(ev.calibrator, "scale_px_per_mm", None)
     results = []
@@ -56,21 +62,21 @@ def evaluate_instances(frame, tracked, ev):
         mask = instance_mask((h, w), obj["contour"])
         calibre = ev.calibre.evaluate(obj, ev.calibrator)
 
-        # La madurez y las manchas no dependen de la calibración, pero sí de una máscara válida
         if obj.get("is_valid_mask") is False:
-            mad, man = _no_evaluable("Máscara recortada o ambigua"), _no_evaluable("Máscara recortada o ambigua")
+            mad = _no_evaluable("Máscara recortada o ambigua")
+            man = _no_evaluable("Máscara recortada o ambigua")
         else:
             mad = ev.maturity.process(frame, mask)
             man = ev.spots.process(frame, mask)
 
-        area_mm2 = (cv2.countNonZero(mask) / (scale ** 2)) if scale else None
+        area_mm2 = (cv2.countNonZero(mask) / (scale**2)) if scale else None
         peso = ev.peso.evaluate(calibre, area_mm2)
         results.append({"calibre": calibre, "peso": peso, "madurez": mad, "manchas": man})
     return results
 
 
 def _v(x):
-    """Dato ausente => vacío (nunca cero), RF7."""
+    """Dato ausente => cadena vacía."""
     return "" if x is None else x
 
 
@@ -105,12 +111,10 @@ def build_row(session_id, frame_idx, timestamp, obj, result, ev):
 
 
 def _ascii(texto):
-    """cv2.putText no dibuja tildes ni ñ: se muestran sin diacríticos en pantalla."""
     return unicodedata.normalize("NFKD", texto).encode("ascii", "ignore").decode()
 
 
 def _texto(img, linea, x, y, color=(0, 255, 0)):
-    """Dibuja una línea de texto sin salirse por el borde derecho del cuadro."""
     linea = _ascii(linea)
     (tw, _), _ = cv2.getTextSize(linea, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
     x = max(2, min(x, img.shape[1] - tw - 2))
@@ -118,8 +122,9 @@ def _texto(img, linea, x, y, color=(0, 255, 0)):
 
 
 def annotate(frame, tracked, results, modo="interfaz"):
-    """modo='interfaz' (por defecto) -> solo el ID; el detalle lo muestra la interfaz.
-    modo='prueba' -> toda la información del tomate sobre el video (para desarrollo)."""
+    """modo='interfaz' -> solo el ID.
+    modo='prueba' -> métricas limpias sobre el video (estilo original).
+    """
     annotated = frame.copy()
     for obj, result in zip(tracked, results):
         x, y, _, _ = obj["bbox"]
@@ -130,44 +135,61 @@ def annotate(frame, tracked, results, modo="interfaz"):
             _texto(annotated, f'ID {obj["id"]}', x, max(16, y - 8))
             continue
 
-        if result["manchas"]["regiones"]:  # RF5: mostrar las regiones detectadas
+        if result["manchas"]["regiones"]:
             cv2.drawContours(annotated, result["manchas"]["regiones"], -1, (0, 255, 255), 2)
 
         cal, pes = result["calibre"], result["peso"]
         mad, man = result["madurez"], result["manchas"]
+
+        # Ancho / Calibre
         if cal["ancho_mm"] is not None:
-            ancho = f'{cal["ancho_mm"]} mm' + ("" if cal["calibracion_validada"] else " (prov.)")
+            ancho = f'{cal["ancho_mm"]} mm (prov.)' if not cal["calibracion_validada"] else f'{cal["ancho_mm"]} mm'
             ancho += f' [{cal["categoria"]}]' if cal["categoria"] else f' [{cal["estado"]}]'
         else:
             ancho = cal["estado"]
+
+        # Peso
         peso = f'{pes["peso_g"]} g' if pes["peso_g"] is not None else pes["estado"]
+
+        # Madurez (sin ratios en pantalla)
         madurez = mad["label"]
-        if mad["r_ratio"] is not None:
-            madurez += f' (R {mad["r_ratio"]:.2f}  C {mad["c_ratio"]:.2f})'
+
+        # Manchas (con porcentaje solo si hay defecto)
         manchas = man["label"]
-        if man["defect_ratio"] is not None:
-            manchas += f' ({man["defect_ratio"] * 100:.1f}%, {man["n_regiones"]} reg.)'
-        lines = [f'ID {obj["id"]}  {ancho}', f'Peso: {peso}',
-                 f'Madurez: {madurez}', f'Manchas: {manchas}']
-        causas = [c for c in (cal["causa"], pes["causa"], mad.get("causa"), man.get("causa")) if c]
-        if causas:
-            lines.append("Obs: " + causas[0])
-        # Bloque anclado a un mínimo fijo y apilado hacia abajo, sin salirse del cuadro
-        top = max(16, y - 8 - 16 * len(lines))
+        if man["defect_ratio"] is not None and man["defect_ratio"] > 0:
+            manchas += f' ({man["defect_ratio"] * 100:.1f}%)'
+
+        lines = [
+            f'ID {obj["id"]}  {ancho}',
+            f"Peso: {peso}",
+            f"Madurez: {madurez}",
+            f"Manchas: {manchas}",
+        ]
+
+        # Bloque apilado encima del tomate
+        top = max(16, y - 8 - 18 * len(lines))
         for k, line in enumerate(lines):
-            _texto(annotated, line, x, top + 16 * k)
+            _texto(annotated, line, x, top + 18 * k)
+
     return annotated
 
-
 def _dist_centro(obj, calibrator):
-    """Distancia del centroide al centro de la zona de medición (criterio de RF9/5.3)."""
     rx, ry, rw, rh = calibrator.valid_roi
     cx, cy = obj["centroid"]
     return math.hypot(cx - (rx + rw / 2), cy - (ry + rh / 2))
 
 
-def preview(frame, segmenter, tracker, ev, registry, session_id, frame_idx, timestamp,
-            modo="interfaz"):
+def preview(
+    frame,
+    segmenter,
+    tracker,
+    ev,
+    registry,
+    session_id,
+    frame_idx,
+    timestamp,
+    modo="interfaz",
+):
     raw_mask, clean_mask, instances = segmenter.process_with_masks(frame)
     tracked = tracker.update(instances)
     results = evaluate_instances(frame, tracked, ev)
@@ -175,18 +197,37 @@ def preview(frame, segmenter, tracker, ev, registry, session_id, frame_idx, time
     if registry is not None:
         for obj, result in zip(tracked, results):
             if not result["calibre"]["en_zona_medicion"]:
-                continue  # fuera de zona de medición: no se consolida todavía (RF9)
+                continue
             row = build_row(session_id, frame_idx, timestamp, obj, result, ev)
             registry.observe(obj["id"], row, _dist_centro(obj, ev.calibrator), frame_idx)
-        registry.tick(frame_idx)  # confirma los IDs que ya salieron de la zona
+        registry.tick(frame_idx)
 
     annotated = annotate(frame, tracked, results, modo)
 
-    # Tomate cortado por el borde del cuadro: solo cambia el color del contorno (naranja),
-    # sin texto, en cualquier modo.
+    if any(e["code"] == "ASSOCIATION_AMBIGUOUS" for e in getattr(tracker, "last_events", [])):
+        cv2.putText(
+            annotated,
+            "Asociacion ambigua: observaciones suspendidas",
+            (10, 25),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.5,
+            (0, 165, 255),
+            1,
+        )
+
     for obj in instances:
         if not obj["is_valid_mask"]:
+            x, y, _, _ = obj["bbox"]
             cv2.drawContours(annotated, [obj["contour"]], -1, (0, 165, 255), 2)
+            cv2.putText(
+                annotated,
+                "Cortado por borde",
+                (x, max(18, y - 5)),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.6,
+                (0, 165, 255),
+                2,
+            )
 
     return {
         "Detecciones": annotated,
@@ -200,29 +241,63 @@ def main():
     parser.add_argument("video", nargs="?", help="Ruta al video. Por defecto usa la cámara 0.")
     parser.add_argument("--foto", type=Path)
     parser.add_argument("--salida-foto", type=Path, help="Guarda las tres vistas sin abrir ventanas.")
-    parser.add_argument("--salida-csv", type=Path, help="Exporta el registro consolidado por tomate (RF7).")
-    parser.add_argument("--formato-csv", choices=("excel", "datos"), default="excel",
-                        help="excel = ';' y coma decimal con encabezados legibles; "
-                             "datos = ',' y punto decimal con nombres técnicos.")
-    parser.add_argument("--sesion", default="SESION_01", help="Identificador de sesión para el CSV (RF9).")
-    parser.add_argument("--modo", choices=("prueba", "interfaz"), default="interfaz",
-                        help="interfaz (por defecto) = solo el ID sobre el video; "
-                             "prueba = toda la información del tomate (para desarrollo).")
-    parser.add_argument("--perfil", default="tomate",
-                        help="Perfil de producto en config/perfiles/<tipo>.json (RF10).")
-    parser.add_argument("--altura-camara-mm", type=float, default=None,
-                        help="Altura de la cámara sobre la cinta; activa la corrección por altura "
-                             "del producto (A2.5). Sin este dato no se corrige.")
-    parser.add_argument("--calib-validada", action="store_true",
-                        help="Declara que px_per_mm fue validado con patrón y pie de metro. "
-                             "Sin este flag el calibre se entrega como 'Provisional'.")
-    parser.add_argument("--tracker", choices=("centroide", "kalman"), default="centroide",
-                         help="centroide = asociación por distancia a la última posición (track.py). "
-                              "kalman = asociación por posición PREDICHA con velocidad constante "
-                              "(track_kalman.py, Unidad 7), más robusto a oclusiones breves.")
+    parser.add_argument("--salida-csv", type=Path, help="Exporta el registro consolidado por tomate.")
+    parser.add_argument(
+        "--formato-csv",
+        choices=("excel", "datos"),
+        default="excel",
+        help="excel = ';' y coma decimal; datos = ',' y punto decimal.",
+    )
+    parser.add_argument("--sesion", default="SESION_01", help="Identificador de sesión para el CSV.")
+    parser.add_argument(
+        "--modo",
+        choices=("prueba", "interfaz"),
+        default="interfaz",
+        help="interfaz = solo ID; prueba = métricas completas en pantalla.",
+    )
+    parser.add_argument("--perfil", default="tomate", help="Perfil en config/perfiles/<tipo>.json.")
+    parser.add_argument(
+        "--altura-camara-mm",
+        type=float,
+        default=None,
+        help="Altura de la cámara sobre la cinta en mm.",
+    )
+    parser.add_argument(
+        "--calib-validada",
+        action="store_true",
+        help="Indica calibración validada físicamente.",
+    )
+    parser.add_argument(
+        "--tracker",
+        choices=("centroide", "kalman"),
+        default="centroide",
+        help="Algoritmo de seguimiento.",
+    )
+    parser.add_argument(
+        "--max-distance",
+        type=float,
+        default=80.0,
+        help="Distancia máxima de asociación en píxeles.",
+    )
+    parser.add_argument(
+        "--max-disappeared",
+        type=int,
+        default=10,
+        help="Cuadros consecutivos ausentes tolerados.",
+    )
+    parser.add_argument(
+        "--ambiguity-margin",
+        type=float,
+        default=2.0,
+        help="Margen de coste en píxeles para ambigüedad (Kalman).",
+    )
     parser.add_argument("--hsv-min", type=int, nargs=3, default=(0, 70, 50))
     parser.add_argument("--hsv-max", type=int, nargs=3, default=(179, 255, 255))
+    parser.add_argument("--resumen", type=Path, help="Ruta para exportar métricas JSON al finalizar.")
+    parser.add_argument("--salida-video", type=Path, help="Ruta para guardar el video procesado.")
+    parser.add_argument("--sin-ventanas", action="store_true", help="Ejecuta sin abrir ventanas OpenCV.")
     args = parser.parse_args()
+
     if args.foto and args.video:
         parser.error("Indica una foto o un video.")
     if args.salida_foto and not args.foto:
@@ -233,6 +308,7 @@ def main():
         parser.error("--sin-ventanas requiere un archivo de video.")
     if args.salida_video and args.video and args.salida_video.resolve() == Path(args.video).resolve():
         parser.error("El video de salida debe ser distinto del archivo de entrada.")
+
     for low, high, limit in zip(args.hsv_min, args.hsv_max, (179, 255, 255)):
         if not 0 <= low <= high <= limit:
             parser.error("Cada límite HSV debe cumplir 0 <= mínimo <= máximo <= límite del canal.")
@@ -240,15 +316,31 @@ def main():
     try:
         perfil = Perfil.cargar(args.perfil)
     except (PerfilInvalido, KeyError, ValueError) as e:
-        parser.exit(1, f"Perfil no válido: {e}\n")  # RF10: configuración incompatible no se habilita
+        parser.exit(1, f"Perfil no válido: {e}\n")
+
     if args.altura_camara_mm is not None:
         perfil.datos.setdefault("calibre", {})["altura_camara_mm"] = args.altura_camara_mm
 
     segmenter = ClassicSegmenter(hsv_lower=args.hsv_min, hsv_upper=args.hsv_max)
-    tracker = KalmanCentroidTracker() if args.tracker == "kalman" else CentroidTracker()
+
+    if args.tracker == "kalman":
+        from funciones.tracking.track_kalman import KalmanCentroidTracker
+
+        tracker = KalmanCentroidTracker(
+            max_distance=args.max_distance,
+            max_disappeared=args.max_disappeared,
+            ambiguity_margin=args.ambiguity_margin,
+        )
+    else:
+        tracker = CentroidTracker(
+            max_distance=args.max_distance,
+            max_disappeared=args.max_disappeared,
+        )
+
     calibrator = Calibrator()
     if args.calib_validada:
         calibrator.validated = True
+
     fuente = str(args.foto or args.video or "camara_0")
     ev = Evaluadores(perfil, calibrator, fuente)
     registry = SessionRegistry() if args.salida_csv else None
@@ -256,7 +348,7 @@ def main():
     def export_if_requested(motivo):
         if not args.salida_csv:
             return
-        registry.close(motivo)  # lo pendiente se cierra con un estado explícito
+        registry.close(motivo)
         ok, msg = registry.export_csv(str(args.salida_csv), args.formato_csv)
         print(("[OK] " if ok else "[INCIDENCIA] ") + msg)
 
@@ -264,8 +356,17 @@ def main():
         frame = cv2.imread(str(args.foto))
         if frame is None:
             parser.exit(1, f"No se pudo leer la foto {args.foto}\n")
-        views = preview(frame, segmenter, tracker, ev, registry, args.sesion, 1, time.time(),
-                         args.modo)
+        views = preview(
+            frame,
+            segmenter,
+            tracker,
+            ev,
+            registry,
+            args.sesion,
+            1,
+            time.time(),
+            args.modo,
+        )
         if args.salida_foto:
             args.salida_foto.mkdir(parents=True, exist_ok=True)
             for name, view in views.items():
@@ -284,6 +385,9 @@ def main():
 
     source = VideoSource(source=args.video if args.video else 0, session_id=args.sesion)
     motivo = "Cerrado por interrupción del operador"
+    tracked_ids = set()
+    video_writer = None
+
     try:
         while True:
             state, meta, frame = source.read_frame()
@@ -295,33 +399,71 @@ def main():
                 motivo = "Cerrado por fuente interrumpida"
                 parser.exit(1, f"Fuente sin cuadros disponibles: {state.value}\n")
 
-            views = preview(frame, segmenter, tracker, ev, registry,
-                            args.sesion, meta["frame_idx"], meta["timestamp"], args.modo)
-            for name, view in views.items():
-                cv2.imshow(name, view)
-            if cv2.waitKey(30) & 0xFF == ord("q"):
-                break
+            views = preview(
+                frame,
+                segmenter,
+                tracker,
+                ev,
+                registry,
+                args.sesion,
+                meta["frame_idx"],
+                meta["timestamp"],
+                args.modo,
+            )
+
+            # Acumular IDs observados para el resumen
+            for obj in getattr(tracker, "objects", {}).keys():
+                tracked_ids.add(obj)
+
+            for event in getattr(tracker, "last_events", []):
+                if event.get("severity") == "warning":
+                    print(
+                        json.dumps(
+                            {
+                                "session_id": meta["session_id"],
+                                "frame_idx": meta["frame_idx"],
+                                **event,
+                            }
+                        )
+                    )
+
+            if args.salida_video:
+                if video_writer is None:
+                    h, w = views["Detecciones"].shape[:2]
+                    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+                    args.salida_video.parent.mkdir(parents=True, exist_ok=True)
+                    video_writer = cv2.VideoWriter(str(args.salida_video), fourcc, 30.0, (w, h))
+                video_writer.write(views["Detecciones"])
+
+            if not args.sin_ventanas:
+                for name, view in views.items():
+                    cv2.imshow(name, view)
+                if cv2.waitKey(30) & 0xFF == ord("q"):
+                    break
     finally:
+        if video_writer is not None:
+            video_writer.release()
         source.release()
         cv2.destroyAllWindows()
         export_if_requested(motivo)
 
     if args.resumen:
-        stats["ids"] = sorted(stats["ids"])
-        stats["ids_asignados"] = len(stats["ids"])
-        stats["fuente"] = args.video if args.video else "camara:0"
-        if args.video:
+        stats = {
+            "ids": sorted(list(tracked_ids)),
+            "ids_asignados": len(tracked_ids),
+            "fuente": args.video if args.video else "camara:0",
+            "tracker": args.tracker,
+            "hsv_min": args.hsv_min,
+            "hsv_max": args.hsv_max,
+            "estado_final": motivo,
+            "opencv": cv2.__version__,
+        }
+        if args.video and Path(args.video).is_file():
             with open(args.video, "rb") as input_file:
                 stats["sha256"] = hashlib.file_digest(input_file, "sha256").hexdigest()
-        stats["tracker"] = args.tracker
-        stats["hsv_min"] = args.hsv_min
-        stats["hsv_max"] = args.hsv_max
-        stats["estado_final"] = ending
-        stats["opencv"] = cv2.__version__
-        args.resumen.parent.mkdir(parents=True, exist_ok=True)
-        args.resumen.write_text(json.dumps(stats, indent=2, ensure_ascii=False) + "\n",
-                               encoding="utf-8")
 
+        args.resumen.parent.mkdir(parents=True, exist_ok=True)
+        args.resumen.write_text(json.dumps(stats, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
 if __name__ == "__main__":
