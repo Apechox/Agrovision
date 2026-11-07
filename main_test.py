@@ -17,7 +17,7 @@ from funciones.caracteristicas.manchas import DarkSpotDetector
 from funciones.caracteristicas.perfiles import Perfil, PerfilInvalido
 from funciones.caracteristicas.peso import PesoEvaluator
 from funciones.registro import SessionRegistry
-from funciones.seg import ClassicSegmenter
+from funciones.segmentación.seg import ClassicSegmenter
 from funciones.tracking.track import CentroidTracker
 
 
