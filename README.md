@@ -1,115 +1,120 @@
 # AgroVision
 
-Prototipo de inspección visual de tomates para TEL328. El flujo básico muestra la máscara HSV, la máscara después de la apertura y el cierre, y una vista con contornos, centroides e IDs. Permite procesar videos sin ventanas y guardar evidencia. El flujo ampliado de atributos y CSV tiene dependencias pendientes de integrar.
+Proyecto de TEL328 para inspeccionar tomates mediante imágenes y videos RGB.
+La interfaz web local permite ver detecciones, máscaras e IDs, consultar calibre,
+peso estimado, madurez visual y manchas, y exportar los resultados de la sesión.
 
-## Setup venv
+## Preparar el entorno virtual
 
-Usa Python 3.14 y ejecuta los comandos desde la carpeta que contiene `main_test.py`. Crea el entorno una vez en cada equipo y actívalo cada vez que abras una terminal para trabajar en el proyecto. Mantén `.venv` local al equipo.
+Usa Python 3.14 y ejecuta los comandos desde la raíz del repositorio, donde están
+las carpetas `web/`, `funciones/` y `config/`.
 
-### PowerShell / CMD
+Crea el entorno una vez por equipo. Actívalo cada vez que abras una terminal para
+trabajar en el proyecto.
+
+### Windows con PowerShell
 
 ```powershell
 py -3.14 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 ```
 
+Si PowerShell bloquea la activación, abre Símbolo del sistema (CMD) en la misma
+carpeta y activa el entorno ya creado:
+
 ```bat
 .venv\Scripts\activate.bat
 ```
 
-### Bash
+### Linux con Bash
 
 ```bash
 python3.14 -m venv .venv
 source .venv/bin/activate
 ```
 
-### Dependencias
+### Instalar dependencias
+
+Con el entorno activado, ejecuta el mismo comando en Windows o Linux:
 
 ```bash
-python -m pip install opencv-python==5.0.0.93 numpy==2.5.4 pillow matplotlib
+python -m pip install -r requirements-tracking.txt
 ```
 
-`pillow` y `matplotlib` son para la interfaz gráfica (`interfaz/`); el pipeline de línea de
-comandos (`main_test.py`) no las necesita.
+El archivo fija las versiones de OpenCV, NumPy y SciPy usadas por el procesamiento.
+El servidor web utiliza la biblioteca estándar de Python.
 
-## Prueba
+Para salir del entorno virtual, ejecuta `deactivate`.
 
-```bash
-python main_test.py --foto dataset/fotos/summerlast.png --salida-foto salida-foto
-```
+## Iniciar la interfaz web
 
-Para analizar un video, reemplaza la ruta de ejemplo por la del archivo:
-
-```bash
-python main_test.py "dataset/videos/piloto.mp4"
-```
-
-Para procesar un video completo y guardar las tres vistas juntas y un resumen técnico:
-
-```bash
-python main_test.py "../VIDEOS/tomates_sabana_gris_1.mp4" --tracker centroide --sin-ventanas --salida-video salidas/hito2/centroide/tomates_sabana_gris_1.mp4 --resumen salidas/hito2/centroide/resumen.json
-```
-
-Usa `--tracker kalman` para ejecutar el mismo flujo con el filtro de Kalman.
-El MP4 conserva el FPS de entrada y muestra, de izquierda a derecha, las detecciones,
-la máscara HSV y la máscara limpia. El JSON registra el hash del video, los parámetros
-HSV, el seguidor, los cuadros procesados y los IDs asignados. Estos contadores requieren
-anotaciones manuales para convertirse en métricas de exactitud.
-
-Los videos originales deben estar disponibles en `../VIDEOS/`. Las salidas se guardan
-localmente en `salidas/`, excluida de Git junto con `.venv/`.
-Para cerrar el entorno ejecuta `deactivate`.
-
-Consulta todas las opciones con `python main_test.py --help`.
-El procedimiento, los resultados de los cinco clips y las incidencias están en
-[Pruebas de video del Hito 2](docs/pruebas_video_hito2.md).
-
-## Flujo ampliado pendiente de integración
-
-`main_test2.py` agrega calibre, madurez, manchas y registro por ID. Requiere
-`funciones/madurez.py`, `funciones/manchas.py` y `funciones/registro.py`,
-ausentes del remoto revisado el 6 de noviembre de 2026. Su ayuda se puede consultar
-con `python main_test2.py --help`. Las pruebas de CSV y atributos quedan pendientes
-hasta integrar los módulos de sus responsables.
-
-## Interfaz gráfica (Tkinter)
-
-```bash
-python -m interfaz.app
-```
-
-Eventos de la sección 6 del documento de diseño: adjuntar imagen/video (Q), iniciar
-procesamiento (W), detener (S), guardar CSV + vista anotada (E), repetir (R), dashboard (D)
-y salir (Esc). También acepta cámara en vivo (selector "Cámara n°").
-
-Usa solo los módulos que existen hoy (`funciones/seg.py`, `track.py`, `calib.py`, `acq.py`)
-a través de `interfaz/pipeline.py`. **Madurez y manchas (A3.1/A3.2) y el registro M6
-(`funciones/registro.py`) aún no están en el repo**: sus columnas salen como "Pendiente" /
-vacías, y `interfaz/sesion.py` es un registro provisional hasta integrar M6.
-
-Pestañas: observaciones actuales, registro de sesión (una fila por ID) e incidencias.
-
-## Interfaz web local
+Con el entorno activado:
 
 ```bash
 python -m web.server
 ```
 
-Abre `http://127.0.0.1:8000`. Misma lógica que la interfaz Tkinter, con vistas por etapa
-(detecciones, máscara HSV, máscara limpia) y una explicación del pipeline. No requiere
-instalar nada más (solo librería estándar, OpenCV y NumPy); escucha únicamente en `127.0.0.1`.
+Abre [AgroVision local](http://127.0.0.1:8000) en el navegador del mismo equipo.
+El servidor escucha en `127.0.0.1`. Mantén la terminal abierta durante la sesión.
 
-Documentación: `docs/documentacion_trabajo.md` y `docs/cambios_vs_diseno.md`.
-La interfaz depende de los mismos tres módulos pendientes. Su funcionamiento completo
-queda pendiente de prueba. El código implementa el modelo de navegación de la sección 6 del documento de diseño: adjuntar
-imagen/video (Q), iniciar procesamiento (W), guardar (E), repetir (R), salir (Esc) y abrir
-el dashboard (D) con los gráficos de Madurez Visual, Calidad Visual y Calibre Aparente.
-Reutiliza las funciones de evaluación y anotación de `main_test2.py`.
+Si el puerto 8000 está ocupado:
 
-## Estado de calibración
+```bash
+python -m web.server --puerto 8080
+```
 
-`config/calib.json` trae un valor de `px_per_mm` de referencia. Antes de confiar en los
-milímetros reportados hay que medirlo con el patrón físico y el pie de metro (tarea
-T2.5.1); mientras tanto, el calibre se reporta como "Estimado (calibración pendiente de
-validar)".
+En ese caso abre [AgroVision en el puerto 8080](http://127.0.0.1:8080).
+Para apagar el servidor, presiona `Ctrl+C` en la terminal.
+
+## Probar con los archivos incluidos
+
+1. Carga `dataset/fotos/summerlast.png` o uno de los cinco archivos
+   `dataset/videos/tomates_sabana_gris_1.mp4` a
+   `dataset/videos/tomates_sabana_gris_5.mp4`. Puedes arrastrarlos a la página o
+   usar el selector de archivos.
+2. Presiona **Iniciar** para procesar la fuente. Si cargas varios archivos,
+   revisa su orden en la cola.
+3. Alterna entre **Detecciones**, **Máscara HSV** y **Máscara limpia** para
+   inspeccionar las etapas. Puedes ajustar los límites HSV y la zona de medición.
+4. Consulta las observaciones actuales, los registros y las incidencias.
+5. Abre **Dashboard** para consultar las estadísticas de la sesión o cargar un
+   CSV anterior.
+6. Usa **Guardar** para descargar los resultados disponibles de la sesión.
+
+También puedes seleccionar una cámara que OpenCV reconozca en el equipo.
+
+| Tecla | Acción |
+|---|---|
+| Q | Seleccionar archivos |
+| W | Iniciar |
+| S | Pausar o continuar |
+| E | Guardar |
+| R | Repetir |
+| D | Abrir o cerrar el dashboard |
+| Esc | Cerrar el dashboard o detener el procesamiento |
+
+Los atajos se desactivan mientras escribes en un campo de entrada.
+
+## Configuración y resultados
+
+- `config/calib.json` contiene la escala, la zona y las condiciones de calibración.
+- `config/perfiles/tomate.json` define los atributos y sus reglas.
+- `config/peso_modelo_tomate.json` contiene el modelo de estimación de peso.
+- `funciones/segmentación/`, `funciones/tracking/` y
+  `funciones/caracteristicas/` contienen los módulos de procesamiento.
+- `funciones/registro.py` gestiona el registro y la exportación.
+- `interfaz/pipeline.py` conecta el procesamiento con la interfaz web.
+
+El calibre y el peso requieren referencias físicas compatibles con el montaje.
+Cambiar la distancia cámara-superficie exige revisar la calibración. Esa distancia
+por sí sola no recalcula la escala en píxeles por milímetro. Revisa los estados
+provisionales, fuera de rango y no evaluables antes de interpretar las medidas.
+
+## Evidencias del Hito 2
+
+- [Segmentación y resultados](docs/segmentacion.md)
+- [Seguimiento y pruebas](docs/tracking/seguimiento.md)
+- [Pruebas con los cinco videos](docs/pruebas_video_hito2.md)
+- [Desarrollo de la interfaz web](docs/documentacion_trabajo.md)
+
+Las evidencias describen la versión y las condiciones de cada ensayo.
