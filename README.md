@@ -79,6 +79,28 @@ hasta integrar los módulos de sus responsables.
 python -m interfaz.app
 ```
 
+Eventos de la sección 6 del documento de diseño: adjuntar imagen/video (Q), iniciar
+procesamiento (W), detener (S), guardar CSV + vista anotada (E), repetir (R), dashboard (D)
+y salir (Esc). También acepta cámara en vivo (selector "Cámara n°").
+
+Usa solo los módulos que existen hoy (`funciones/seg.py`, `track.py`, `calib.py`, `acq.py`)
+a través de `interfaz/pipeline.py`. **Madurez y manchas (A3.1/A3.2) y el registro M6
+(`funciones/registro.py`) aún no están en el repo**: sus columnas salen como "Pendiente" /
+vacías, y `interfaz/sesion.py` es un registro provisional hasta integrar M6.
+
+Pestañas: observaciones actuales, registro de sesión (una fila por ID) e incidencias.
+
+## Interfaz web local
+
+```bash
+python -m web.server
+```
+
+Abre `http://127.0.0.1:8000`. Misma lógica que la interfaz Tkinter, con vistas por etapa
+(detecciones, máscara HSV, máscara limpia) y una explicación del pipeline. No requiere
+instalar nada más (solo librería estándar, OpenCV y NumPy); escucha únicamente en `127.0.0.1`.
+
+Documentación: `docs/documentacion_trabajo.md` y `docs/cambios_vs_diseno.md`.
 La interfaz depende de los mismos tres módulos pendientes. Su funcionamiento completo
 queda pendiente de prueba. El código implementa el modelo de navegación de la sección 6 del documento de diseño: adjuntar
 imagen/video (Q), iniciar procesamiento (W), guardar (E), repetir (R), salir (Esc) y abrir

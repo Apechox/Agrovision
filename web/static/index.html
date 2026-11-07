@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AgroVision</title>
+  <link rel="stylesheet" href="/style.css">
+  <script>  /* aplica el tema guardado antes de pintar, para que no parpadee */
+    try { var t = localStorage.getItem('agrovision.tema'); if (t) document.documentElement.dataset.tema = t; } catch (e) { /* sin almacenamiento */ }
+  </script>
+</head>
+<body>
+<header class="barra">
+  <div class="marca"><span class="logo" aria-hidden="true">🍅</span>
+    <div><h1>AgroVision</h1><p>Para la inspección visual de tomates</p></div></div>
+</header>
+
+<main class="rejilla">
+  <!-- ============ Columna izquierda: video + ajustes + pipeline ============ -->
+  <section class="col-izq">
+    <div class="tarjeta">
+      <div class="tabs did" role="tablist" aria-label="Vista del procesamiento">
+        <button class="tab activa" data-vista="detecciones" role="tab">1 · Detecciones</button>
+        <button class="tab did" data-vista="mascara" role="tab">2a · Máscara HSV</button>
+        <button class="tab did" data-vista="limpia" role="tab">2b · Máscara limpia</button>
+      </div>
+      <div class="visor">
+        <img id="video" alt="Video en inspección">
+        <div id="roi" class="roi" hidden title="Arrastra para mover; usa los puntos para cambiar el tamaño">
+          <i data-h="nw"></i><i data-h="n"></i><i data-h="ne"></i><i data-h="e"></i>
+          <i data-h="se"></i><i data-h="s"></i><i data-h="sw"></i><i data-h="w"></i>
+        </div>
+        <div id="aviso-interrupcion" class="banda-aviso" hidden>
+          ⚠ ÚLTIMOS RESULTADOS — anteriores a la interrupción de la fuente
+        </div>
+      </div>
+      <div class="fila">
+        <span id="roi-txt" class="chico">Zona de medición: aparece sobre la imagen cuando hay un cuadro</span>
+        <button id="btn-roi-reset" class="sec" title="Vuelve a medir sobre todo el cuadro">Restablecer zona</button>
+      </div>
+      <p id="explica" class="explica did"></p>
+    </div>
+
+    <details class="tarjeta menu">
+      <summary>Ajustes</summary>
+      <details class="submenu">
+        <summary>HSV</summary>
+        <p class="explica">Mueve los límites y mira cómo cambia la <b>máscara</b> (pestaña 2a). H = tono de color,
+          S = saturación, V = brillo. Con una imagen cargada verás una vista previa; para registrar con estos
+          valores presiona <b>Iniciar</b>. Con video, el cambio se aplica en caliente.</p>
+        <div class="sliders" id="sliders"></div>
+        <div class="fila">
+          <button id="btn-hsv-reset" class="sec">Restablecer valores por defecto</button>
+          <span id="hsv-nota" class="chico"></span>
+        </div>
+      </details>
+      <details class="submenu">
+        <summary>Calibración</summary>
+        <p class="explica">La distancia de la cámara a la superficie donde están los tomates se guarda en
+          <code>config/calib.json</code>. Si la cambias, la calibración queda <b>pendiente de verificación</b>:
+          la escala px/mm no se recalcula sola, hay que volver a medir con el patrón.</p>
+        <div class="fila calib-fila">
+          <label class="campo">Distancia cámara-superficie [cm]
+            <input id="calib-dist" type="number" min="10" max="500" step="1" value="90"></label>
+          <button id="btn-calib" class="sec">Aplicar</button>
+          <span id="calib-nota" class="chico"></span>
+        </div>
+      </details>
+      <details class="submenu">
+        <summary>Temas</summary>
+        <p class="explica">Paletas inspiradas en frutas. El tema se aplica a toda la interfaz y al dashboard, y se recuerda en este navegador.</p>
+        <div class="temas" id="temas" role="radiogroup" aria-label="Tema de color"></div>
+      </details>
+    </details>
+
+    <div class="tarjeta did">
+      <h2>Flujo de procesamiento</h2>
+      <p class="explica">Camino de cada cuadro, de la imagen al registro. Haz clic en una etapa de la segmentación
+        para ver su máscara en el video.</p>
+      <ol class="flujo" id="flujo"></ol>
+      <p class="explica" id="flujo-nota"></p>
+    </div>
+
+    <div class="tarjeta did">
+      <h2>Pipeline: ¿qué pasa con cada cuadro?</h2>
+      <ol class="etapas" id="etapas"></ol>
+      <p id="etapa-detalle" class="explica">Pasa el mouse o haz clic en una etapa para ver qué hace.</p>
+    </div>
+  </section>
+
+  <!-- ============ Columna derecha: control + fuente + resultados ============ -->
+  <section class="col-der">
+    <div class="tarjeta">
+      <div class="fila botones">
+        <button id="btn-iniciar" class="prim"><kbd>W</kbd> Iniciar</button>
+        <button id="btn-pausa" class="sec" title="Pausa el análisis; vuelve a presionar para continuar donde quedó"><kbd>S</kbd> Pausar</button>
+        <button id="btn-terminar" class="sec" title="Termina la sesión: conserva lo registrado y no se puede continuar"><kbd>Esc</kbd> Terminar</button>
+        <button id="btn-guardar" class="sec" title="Guarda el CSV del operador, el CSV técnico y la vista anotada"><kbd>E</kbd> Guardar</button>
+        <button id="btn-repetir" class="sec" title="Descarta los resultados y vuelve a poner toda la cola en espera"><kbd>R</kbd> Repetir</button>
+      </div>
+    </div>
+
+    <div class="tarjeta">
+      <h2>Fuente</h2>
+      <div id="zona" class="zona" tabindex="0">
+        <strong>Arrastra imágenes o videos aquí</strong>
+        <span>o presiona <kbd>Q</kbd> para elegir archivos (puedes elegir varios)</span>
+        <input id="archivo" type="file" accept=".png,.jpg,.jpeg,.bmp,.mp4,.avi,.mov,.mkv" multiple hidden>
+      </div>
+      <div class="fila">
+        <span>ó</span>
+        <button id="btn-camara" class="sec">Usar cámara</button>
+        <label class="camara">Cámara N°
+          <input id="camara-n" type="number" min="0" max="9" value="0"></label>
+      </div>
+      <div id="cola-caja" hidden>
+        <div class="fila cola-cab">
+          <b id="cola-titulo">Cola</b>
+          <button id="btn-vaciar" class="sec chico-btn">Vaciar cola</button>
+        </div>
+        <ol id="cola" class="cola"></ol>
+      </div>
+      <div class="estado-fuente">
+        <span id="pill" class="pill pill-espera">● Esperando fuente</span>
+        <span id="meta" class="meta"></span>
+      </div>
+    </div>
+
+    <div class="tarjeta">
+      <div class="tabs" role="tablist" aria-label="Resultados">
+        <button class="tab activa" data-panel="p-actual" role="tab">Actuales</button>
+        <button class="tab" data-panel="p-registro" role="tab">Registro</button>
+        <button class="tab" data-panel="p-incid" role="tab" id="tab-incid">Incidencias</button>
+        <button class="tab" id="btn-dash" title="Abre el dashboard en pantalla completa"><kbd>D</kbd> Dashboard</button>
+      </div>
+
+      <div id="p-actual" class="panel">
+        <p id="titulo-actual" class="chico">Sin observaciones</p>
+        <div class="tabla-caja"><table>
+          <thead><tr><th>ID</th><th>Ancho px</th><th>Ancho mm</th><th>Calibre</th>
+            <th>Madurez</th><th>Manchas</th><th>Validez</th></tr></thead>
+          <tbody id="t-actual"></tbody></table></div>
+        <p id="estado-calibre" class="chico"></p>
+      </div>
+
+      <div id="p-registro" class="panel" hidden>
+        <p id="titulo-registro" class="chico">Una fila por tomate (por ID), no por cuadro.</p>
+        <div class="tabla-caja"><table>
+          <thead><tr><th>Archivo</th><th>ID</th><th>Cuadro</th><th>Ancho mm</th><th>Calibre</th></tr></thead>
+          <tbody id="t-registro"></tbody></table></div>
+      </div>
+
+      <div id="p-incid" class="panel" hidden>
+        <ul id="lista-incid" class="incid"></ul>
+      </div>
+
+    </div>
+  </section>
+</main>
+
+<!-- ============ Dashboard: vista de ancho completo (sección 6.2.2 del documento) ============ -->
+<section id="vista-dash" class="dash-pagina" hidden aria-label="Dashboard">
+  <div class="dash-cab">
+    <button id="dash-salir" class="sec"><kbd>Esc</kbd> ← Salir</button>
+    <div class="dash-titulo"><h2>Dashboard</h2></div>
+    <div class="dash-controles">
+      <label><input type="radio" name="dash-origen" value="sesion" checked> Sesión actual</label>
+      <label><input type="radio" name="dash-origen" value="csv"> Archivo CSV</label>
+      <button id="dash-cargar" class="sec chico-btn" title="Acepta el CSV del operador (;) o el técnico (,)">Cargar CSV…</button>
+      <input type="file" id="dash-archivo" accept=".csv,text/csv" hidden>
+      <label>Archivo <select id="dash-f-archivo"></select></label>
+    </div>
+  </div>
+  <p id="dash-nombre" class="chico"></p>
+  <p id="titulo-dash" class="chico"></p>
+
+  <div id="donas" class="donas"></div>
+
+  <div class="dash-pie">
+    <label class="dash-fruto">Fruto: <select id="dash-f-fruto"></select></label>
+    <div id="dash-total" class="dash-total"></div>
+  </div>
+
+  <div class="dash-abajo">
+    <div id="dash-kpi" class="kpis-izq"></div>
+    <div id="graficas" class="graficas"></div>
+  </div>
+</section>
+
+<footer class="pie">
+  <span>Proyecto iniciado para el curso de TEL328</span>
+  <label class="interruptor" title="Muestra las etapas intermedias, el esquema del flujo y la explicación del pipeline">
+    <input type="checkbox" id="modo-did"> <span>Modo didáctico</span>
+  </label>
+</footer>
+
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+<script src="/dashboard.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>
