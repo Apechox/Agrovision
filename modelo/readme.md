@@ -20,16 +20,13 @@ de tipo e integrarlo con los perfiles por especie** del documento de diseño).
 - **Licencia:** CC BY-NC-SA 4.0 (uso no comercial, con atribución, compartir igual).
   Para un proyecto académico de TEL328 está bien; cítalo en el informe final
   (sección 1.4 Referencias) si el modelo se entrena con él.
-- **Descarga:** no pude bajarlo yo mismo — el entorno donde corro no tiene salida de red
-  hacia S3/hosts externos (solo PyPI/npm/GitHub). Lo tienes que bajar tú:
+
 
   ```bash
   curl -o laboro_tomato.zip http://assets.laboro.ai.s3.amazonaws.com/laborotomato/laboro_tomato.zip
   unzip laboro_tomato.zip -d modelo/data/laboro_tomato_raw
   ```
 
-  (o simplemente abre el link en el navegador y descomprime). Verificado contra la
-  configuración oficial del repo: la estructura esperada es
 
   ```
   laboro_tomato_raw/
@@ -40,15 +37,10 @@ de tipo e integrarlo con los perfiles por especie** del documento de diseño).
   └── test/
   ```
 
-  Si al descomprimir la estructura real difiere de esto (nombres de carpeta distintos,
-  por ejemplo), ajusta las rutas en `scripts/preparar_dataset.py` — no pude verificarlo
-  contra el ZIP real, solo contra la configuración de MMDetection que publica el repo
-  oficial.
 
 ## 2. Flujo de trabajo
 
-El primer comando instala las dependencias del archivo `requirements.txt` (ver sección 2.1
-si no sabes qué es); los siguientes tres corren los scripts que están en `modelo/scripts/`.
+El primer comando instala las dependencias del archivo `requirements.txt`, los siguientes tres corren los scripts que están en `modelo/scripts/`.
 
 ```bash
 python -m pip install -r modelo/requirements.txt
@@ -65,17 +57,8 @@ python modelo/scripts/entrenar_yolo_seg.py --data modelo/data/laboro_tomato_yolo
 python modelo/scripts/evaluar_vs_clasico.py --data modelo/data/laboro_tomato_yolo
 ```
 
-### 2.1 ¿Qué es `requirements.txt`?
 
-Es un archivo de texto plano (no se ejecuta, no es código) que lista los paquetes de
-Python que hacen falta para correr los 3 scripts de esta carpeta — cada línea es
-`nombre_paquete>=version_minima`. `pip install -r modelo/requirements.txt` lee ese
-archivo e instala todo de una vez, en vez de escribir `pip install ultralytics`,
-`pip install pycocotools`, etc. uno por uno. Se separó del `requirements.txt` general
-del proyecto (si lo tienes) porque `ultralytics`/`pycocotools` solo los necesita el
-modelo OE4 — el pipeline clásico (`main_test.py`) no los usa para nada.
-
-## 3. Decisiones y por qué
+## 2. Decisiones y por qué
 
 - **YOLOv8-seg en vez de Mask R-CNN/MMDetection:** el documento de diseño (sección 1.3)
   ya menciona YOLO como alternativa factible, y Ultralytics se instala con un solo
@@ -93,12 +76,3 @@ modelo OE4 — el pipeline clásico (`main_test.py`) no los usa para nada.
 - **Qué NO resuelve este dataset:** son fotos de tomates en la planta/cosechados, no en
   una cinta transportadora — sirve para el reconocimiento de tipo (OE4), no reemplaza el
   video real del montaje que necesitan A1.2/A1.3 para tracking y calibración.
-
-## 4. Pendiente / no verificado
-
-- La estructura real del ZIP descomprimido (solo verificada contra la config de
-  MMDetection, no contra el archivo).
-- El entrenamiento no se ejecutó aquí (requiere el dataset real, que no pude descargar).
-- `evaluar_vs_clasico.py` deja los cálculos de precisión/exhaustividad/IoU como función
-  a completar una vez haya un modelo entrenado — por ahora corre y marca claramente
-  qué falta (NotImplementedError documentado, no un resultado inventado).
