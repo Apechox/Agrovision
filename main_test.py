@@ -16,7 +16,7 @@ from funciones.caracteristicas.madurez import ColorMaturityClassifier
 from funciones.caracteristicas.manchas import DarkSpotDetector
 from funciones.caracteristicas.perfiles import Perfil, PerfilInvalido
 from funciones.caracteristicas.peso import PesoEvaluator
-from funciones.registro import SessionRegistry
+from funciones.registro import SessionRegistry, describir_calibracion
 from funciones.segmentación.seg import ClassicSegmenter
 from funciones.tracking.track import CentroidTracker
 
@@ -89,12 +89,14 @@ def build_row(session_id, frame_idx, timestamp, obj, result, ev):
         "id": obj["id"],
         "timestamp": round(timestamp, 3),
         "tipo": ev.perfil.tipo,
+        "ancho_px": obj["bbox"][2],
         "ancho_mm": _v(cal["ancho_mm"]),
         "calibre_categoria": _v(cal["categoria"]),
         "calibre_estado": cal["estado"],
         "calibre_causa": _v(cal["causa"]),
         "peso_g": _v(pes["peso_g"]),
         "peso_estado": pes["estado"],
+        "peso_causa": _v(pes["causa"]),
         "madurez_label": mad["label"],
         "c_ratio": _v(mad["c_ratio"]),
         "r_ratio": _v(mad["r_ratio"]),
@@ -173,6 +175,7 @@ def annotate(frame, tracked, results, modo="interfaz"):
 
     return annotated
 
+
 def _dist_centro(obj, calibrator):
     rx, ry, rw, rh = calibrator.valid_roi
     cx, cy = obj["centroid"]
@@ -215,19 +218,11 @@ def preview(
             1,
         )
 
+    # Tomate cortado por el borde del cuadro: solo cambia el color del contorno (naranja),
+    # sin texto, en cualquier modo.
     for obj in instances:
         if not obj["is_valid_mask"]:
-            x, y, _, _ = obj["bbox"]
             cv2.drawContours(annotated, [obj["contour"]], -1, (0, 165, 255), 2)
-            cv2.putText(
-                annotated,
-                "Cortado por borde",
-                (x, max(18, y - 5)),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.6,
-                (0, 165, 255),
-                2,
-            )
 
     return {
         "Detecciones": annotated,
@@ -244,9 +239,11 @@ def main():
     parser.add_argument("--salida-csv", type=Path, help="Exporta el registro consolidado por tomate.")
     parser.add_argument(
         "--formato-csv",
-        choices=("excel", "datos"),
+        choices=("excel", "operador", "datos", "tecnico", "completo"),
         default="excel",
-        help="excel = ';' y coma decimal; datos = ',' y punto decimal.",
+        help="excel/operador = 12 columnas, ';' y coma decimal, solo registros definitivos; "
+        "datos/tecnico = 28 columnas con la configuración desglosada; "
+        "completo = las 28 + el detalle del análisis (C, R, %% de manchas...).",
     )
     parser.add_argument("--sesion", default="SESION_01", help="Identificador de sesión para el CSV.")
     parser.add_argument(
@@ -343,7 +340,20 @@ def main():
 
     fuente = str(args.foto or args.video or "camara_0")
     ev = Evaluadores(perfil, calibrator, fuente)
-    registry = SessionRegistry() if args.salida_csv else None
+
+    registry = None
+    if args.salida_csv:
+        altura_mm = perfil.seccion("calibre").get("altura_camara_mm")
+        version_cal = describir_calibracion(
+            calibrator.scale_px_per_mm,
+            getattr(calibrator, "validated", False),
+            calibrator.valid_roi,
+            args.hsv_min,
+            args.hsv_max,
+            dist_cm=(altura_mm / 10) if altura_mm else None,
+        )
+        # El registro tolera los mismos cuadros ausentes que el seguimiento antes de confirmar.
+        registry = SessionRegistry(args.sesion, fuente, version_cal, gap_confirmacion=args.max_disappeared)
 
     def export_if_requested(motivo):
         if not args.salida_csv:
@@ -444,7 +454,8 @@ def main():
         if video_writer is not None:
             video_writer.release()
         source.release()
-        cv2.destroyAllWindows()
+        if not args.sin_ventanas:
+            cv2.destroyAllWindows()
         export_if_requested(motivo)
 
     if args.resumen:

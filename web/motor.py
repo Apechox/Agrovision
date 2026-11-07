@@ -25,7 +25,7 @@ import numpy as np
 
 from funciones.acq import SourceState, VideoSource
 from interfaz.pipeline import CONFIG_CALIB, PipelineInspeccion, leer_imagen
-from interfaz.sesion import SesionRegistro, exportar_sesiones
+from funciones.registro import SesionRegistro, exportar_sesiones
 
 RAIZ = Path(__file__).resolve().parent.parent
 MUESTRA = RAIZ / "dataset" / "fotos" / "summerlast.png"

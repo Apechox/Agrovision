@@ -4,9 +4,25 @@ Un perfil define atributos aplicables, unidades, categorías y umbrales. Los cri
 del tomate NO se trasladan a otros productos: cada tipo tiene su propio JSON.
 """
 import json
+import os
 from pathlib import Path
 
-RAIZ = Path(__file__).resolve().parent.parent
+
+def _buscar_raiz():
+    candidatas = []
+    if os.environ.get("AGROVISION_RAIZ"):
+        candidatas.append(Path(os.environ["AGROVISION_RAIZ"]))
+    aqui = Path(__file__).resolve()
+    candidatas += list(aqui.parents)
+    cwd = Path.cwd().resolve()
+    candidatas += [cwd, *cwd.parents]
+    for c in candidatas:
+        if (c / "config" / "perfiles").is_dir():
+            return c
+    return aqui.parent.parent  # último recurso: el comportamiento anterior
+
+
+RAIZ = _buscar_raiz()
 PERFILES_DIR = RAIZ / "config" / "perfiles"
 
 NO_APLICA = "No aplica"

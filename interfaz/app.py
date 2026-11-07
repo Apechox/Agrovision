@@ -30,7 +30,7 @@ from PIL import Image, ImageTk
 from funciones.acq import SourceState, VideoSource
 from interfaz.dashboard import mostrar_dashboard
 from interfaz.pipeline import PipelineInspeccion, leer_imagen
-from interfaz.sesion import SesionRegistro
+from funciones.registro import SesionRegistro
 
 EXT_IMAGEN = {".png", ".jpg", ".jpeg", ".bmp"}
 EXT_VIDEO = {".mp4", ".avi", ".mov", ".mkv"}
