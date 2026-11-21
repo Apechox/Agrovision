@@ -1,78 +1,52 @@
 # Modelo de reconocimiento de tipo (OE4)
 
 Carpeta separada del resto del proyecto (A2.x/A3.x son el pipeline clásico; esto es
-exclusivamente lo necesario para **OE4 — Entrenar o ajustar el modelo de reconocimiento
-de tipo e integrarlo con los perfiles por especie** del documento de diseño).
+lo necesario para **OE4 — Entrenar o ajustar el modelo de reconocimiento de tipo e
+integrarlo con los perfiles por especie** del documento de diseño).
 
-**Qué hay en cada subcarpeta:**
-- `modelo/scripts/` — el código (los 3 .py), separado de los datos/resultados.
-- `modelo/data/` — donde va el dataset descargado y convertido (no existe todavía,
-  se crea al correr los scripts).
-- `modelo/requirements.txt` — lista de librerías de Python que necesita *solo* esta
-  carpeta (ver más abajo qué es exactamente).
+## Qué hay acá
 
-## 1. Dataset: Laboro Tomato
+- `preparar_dataset_multiespecie.py` — convierte 5 datasets públicos heterogéneos
+  (COCO, máscaras indexadas, VIA CSV) a un único dataset YOLO-seg combinado.
+  Reemplaza al antiguo `preparar_dataset.py` (solo Laboro Tomato / solo tomate).
+- `entrenar_yolo_seg.py` — ajusta un `yolov8n-seg.pt` preentrenado sobre el
+  dataset combinado.
+- `yolo_seg.py` — adaptador `YoloSegmenter`: implementa el mismo contrato que
+  `funciones/segmentación/seg.py` (`ClassicSegmenter`), así que se puede usar
+  en lugar del segmentador HSV sin tocar tracking/calibre/peso/madurez/manchas.
+  Ver docstring del archivo para el detalle del contrato.
+- `evaluar_vs_clasico.py` — compara detecciones del modelo contra el pipeline
+  clásico sobre las mismas imágenes; `calcular_metricas()` (precisión/
+  exhaustividad/IoU) sigue como `NotImplementedError` documentado, pendiente.
+- `pesos/` — pesos ya entrenados (`especies_v1_best.pt`) y
+  [`pesos/README.md`](pesos/README.md) con el detalle completo: qué 5
+  datasets se usaron (con links y licencias), cómo regenerar el dataset
+  combinado, el comando de entrenamiento exacto y la tabla de resultados
+  por especie.
+- `data/` — no se versiona (dataset crudo + combinado, varios GB); se
+  regenera localmente, ver `pesos/README.md`.
 
-- **Qué es:** 804 imágenes de tomates con segmentación de instancia a nivel de píxel,
-  804 imágenes (643 train / 161 test), 6 clases que combinan tamaño (`b_` = cherry/big,
-  `l_` = little) y estado de madurez (`fully_ripened`, `half_ripened`, `green`).
-  Repositorio oficial: <https://github.com/laboroai/LaboroTomatoDatasets>.
-- **Licencia:** CC BY-NC-SA 4.0 (uso no comercial, con atribución, compartir igual).
-  Para un proyecto académico de TEL328 está bien; cítalo en el informe final
-  (sección 1.4 Referencias) si el modelo se entrena con él.
+> **Nota:** `modelo/scripts/` contiene copias antiguas de estos mismos
+> archivos (de antes de la versión multiespecie). Son las que no se deben
+> usar — las vigentes son las de `modelo/` directamente. Conviene que el
+> equipo las elimine para no confundirse, pero no las borré yo para no
+> tomar esa decisión por el grupo.
 
+## Uso rápido
 
-  ```bash
-  curl -o laboro_tomato.zip http://assets.laboro.ai.s3.amazonaws.com/laborotomato/laboro_tomato.zip
-  unzip laboro_tomato.zip -d modelo/data/laboro_tomato_raw
-  ```
-
-
-  ```
-  laboro_tomato_raw/
-  ├── annotations/
-  │   ├── train.json   # COCO instance segmentation
-  │   └── test.json
-  ├── train/            # imágenes .jpg
-  └── test/
-  ```
-
-
-## 2. Flujo de trabajo
-
-El primer comando instala las dependencias del archivo `requirements.txt`, los siguientes tres corren los scripts que están en `modelo/scripts/`.
-
-```bash
-python -m pip install -r modelo/requirements.txt
-
-# 1) Convierte las anotaciones COCO a formato YOLO-seg (Ultralytics)
-python modelo/scripts/preparar_dataset.py \
-    --origen modelo/data/laboro_tomato_raw \
-    --destino modelo/data/laboro_tomato_yolo
-
-# 2) Entrena (ajuste de un modelo preentrenado, tarea A4.3)
-python modelo/scripts/entrenar_yolo_seg.py --data modelo/data/laboro_tomato_yolo/data.yaml --epochs 48
-
-# 3) Compara contra el pipeline clásico (tarea A4.4), sobre las mismas imágenes de test
-python modelo/scripts/evaluar_vs_clasico.py --data modelo/data/laboro_tomato_yolo
+```powershell
+python modelo\entrenar_yolo_seg.py --data modelo\data\combined_yolo\data.yaml --device 0 --epochs 15 --imgsz 640 --batch 16 --nombre especies_v1
+python main_test.py <video_o_foto> --segmentador yolo --modelo-yolo modelo\pesos\especies_v1_best.pt
 ```
 
+Detalle completo (datasets, licencias, métricas, limitaciones) en
+[`pesos/README.md`](pesos/README.md).
 
-## 2. Decisiones y por qué
+## Qué falta (OE4 / RF10)
 
-- **YOLOv8-seg en vez de Mask R-CNN/MMDetection:** el documento de diseño (sección 1.3)
-  ya menciona YOLO como alternativa factible, y Ultralytics se instala con un solo
-  `pip install ultralytics`, sin el stack de MMDetection/MMCV que exige el repo oficial
-  de Laboro.AI. El baseline publicado por Laboro.AI (Mask R-CNN R-50-FPN, bbox AP 64.3,
-  mask AP 65.7) sirve igual como referencia de qué tan bien debería rendir un modelo
-  ajustado a este dataset, sea cual sea la arquitectura.
-- **`--clase-unica` en `scripts/preparar_dataset.py`:** por defecto se mantienen las 6 clases
-  originales (tamaño × madurez), porque sirven para una idea que vale la pena explorar
-  más adelante: las etiquetas de madurez de Laboro Tomato son ground truth independiente
-  para contrastar contra la clasificación por color de `funciones/madurez.py` (RNF6:
-  evaluación con datos reservados). Si por ahora solo necesitas "es tomate sí/no" para
-  RF2 (reconocimiento y segmentación), usa `--clase-unica` para colapsar todo a una sola
-  clase `tomate` y entrenar más rápido con menos datos por clase.
-- **Qué NO resuelve este dataset:** son fotos de tomates en la planta/cosechados, no en
-  una cinta transportadora — sirve para el reconocimiento de tipo (OE4), no reemplaza el
-  video real del montaje que necesitan A1.2/A1.3 para tracking y calibración.
+El modelo ya identifica especie (`tipo_detectado`) y confianza por
+detección, disponibles en cada instancia que entrega `YoloSegmenter`. Lo
+que **todavía no existe** es la selección automática de `Perfil`/
+`Evaluadores` según la especie detectada (hoy solo hay
+`config/perfiles/tomate.json`) — es el siguiente paso para que RF10 use el
+tipo detectado en vez de asumir siempre tomate.
