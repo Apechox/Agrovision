@@ -134,7 +134,10 @@ def annotate(frame, tracked, results, modo="interfaz"):
         cv2.circle(annotated, obj["centroid"], 4, (0, 255, 0), -1)
 
         if modo == "interfaz":
-            _texto(annotated, f'ID {obj["id"]}', x, max(16, y - 8))
+            etiqueta = f'ID {obj["id"]}'
+            if "tipo_detectado" in obj:
+                etiqueta += f' {obj["tipo_detectado"]} ({obj["confianza"]:.2f})'
+            _texto(annotated, etiqueta, x, max(16, y - 8))
             continue
 
         if result["manchas"]["regiones"]:
@@ -167,6 +170,8 @@ def annotate(frame, tracked, results, modo="interfaz"):
             f"Madurez: {madurez}",
             f"Manchas: {manchas}",
         ]
+        if "tipo_detectado" in obj:
+            lines.insert(1, f'Especie: {obj["tipo_detectado"]} ({obj["confianza"]:.2f})')
 
         # Bloque apilado encima del tomate
         top = max(16, y - 8 - 18 * len(lines))
@@ -293,6 +298,13 @@ def main():
     parser.add_argument("--resumen", type=Path, help="Ruta para exportar métricas JSON al finalizar.")
     parser.add_argument("--salida-video", type=Path, help="Ruta para guardar el video procesado.")
     parser.add_argument("--sin-ventanas", action="store_true", help="Ejecuta sin abrir ventanas OpenCV.")
+    parser.add_argument(
+        "--segmentador",
+        choices=("clasico", "yolo"),
+        default="clasico",
+        help="clasico = HSV + contornos; yolo = modelo entrenado (requiere --modelo-yolo).",
+    )
+    parser.add_argument("--modelo-yolo", type=Path, help="Ruta a los pesos .pt entrenados.")
     args = parser.parse_args()
 
     if args.foto and args.video:
@@ -305,6 +317,8 @@ def main():
         parser.error("--sin-ventanas requiere un archivo de video.")
     if args.salida_video and args.video and args.salida_video.resolve() == Path(args.video).resolve():
         parser.error("El video de salida debe ser distinto del archivo de entrada.")
+    if args.segmentador == "yolo" and not args.modelo_yolo:
+        parser.error("--segmentador yolo requiere --modelo-yolo <ruta/a/best.pt>.")
 
     for low, high, limit in zip(args.hsv_min, args.hsv_max, (179, 255, 255)):
         if not 0 <= low <= high <= limit:
@@ -318,7 +332,12 @@ def main():
     if args.altura_camara_mm is not None:
         perfil.datos.setdefault("calibre", {})["altura_camara_mm"] = args.altura_camara_mm
 
-    segmenter = ClassicSegmenter(hsv_lower=args.hsv_min, hsv_upper=args.hsv_max)
+    if args.segmentador == "yolo":
+        from modelo.yolo_seg import YoloSegmenter
+
+        segmenter = YoloSegmenter(modelo_path=args.modelo_yolo)
+    else:
+        segmenter = ClassicSegmenter(hsv_lower=args.hsv_min, hsv_upper=args.hsv_max)
 
     if args.tracker == "kalman":
         from funciones.tracking.track_kalman import KalmanCentroidTracker

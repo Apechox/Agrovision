@@ -9,3 +9,12 @@ yolov8n-seg.pt
 tests
 videos_prueba
 salida
+
+modelo/data/*_raw/
+modelo/data/combined_yolo/
+runs/
+.venv/
+.venv_gpu/
+
+*.zip
+*.tar.gz
